@@ -868,12 +868,12 @@ add_speaker_notes(
 # SLIDE 7: Challenge Solution Walkthrough
 # ===========================================================================
 slide7 = create_slide()
-content_top = add_header(slide7, "0x01 Solution: Client-Side Exposure", "Debrief & Walkthrough")
+content_top = add_header(slide7, "Challenge 0x01: Rules & Submission", "League Competition")
 
 col_w = Inches(5.6)
 col_h = Inches(4.3)
 
-# Left Column: Inspect the DOM
+# Left Column: Points & Submission Details
 card_s1 = slide7.shapes.add_shape(
     MSO_SHAPE.ROUNDED_RECTANGLE,
     Inches(0.8),
@@ -893,42 +893,50 @@ tf.margin_right = Inches(0.4)
 tf.margin_top = Inches(0.35)
 
 p = tf.paragraphs[0]
-p.text = "STEP 1: INSPECT THE DOM"
+p.text = "🚩 EARN LEAGUE POINTS"
 p.font.name = FONT_CODE
 p.font.size = Pt(15)
 p.font.bold = True
 p.font.color.rgb = CYAN
 
 p = tf.add_paragraph()
-p.text = "• Press F12 or Right-Click ➔ Inspect Element"
+p.text = "• Point Value: +100 Points on Master Leaderboard"
 p.font.name = FONT_BODY
 p.font.size = Pt(13.5)
-p.font.color.rgb = WHITE
-p.space_before = Pt(10)
+p.font.bold = True
+p.font.color.rgb = GREEN_ACCENT
+p.space_before = Pt(12)
 
 p = tf.add_paragraph()
-p.text = "• Examine HTML comments inside <body>:"
+p.text = "• Flag Format: sfbu{...}"
 p.font.name = FONT_BODY
-p.font.size = Pt(13.5)
+p.font.size = Pt(13)
 p.font.color.rgb = WHITE
 p.space_before = Pt(8)
-p.space_after = Pt(10)
 
 p = tf.add_paragraph()
-p.text = "<!-- The flag is here:\nc2ZidXt3M2xjMG0zX3QwX2I0eXMzY18yMDI2fQ== -->"
-p.font.name = FONT_CODE
-p.font.size = Pt(11.5)
-p.font.color.rgb = GREEN_ACCENT
+p.text = "• Challenge Portal: tinyurl.com/baysec-week4"
+p.font.name = FONT_BODY
+p.font.size = Pt(13)
+p.font.color.rgb = WHITE
+p.space_before = Pt(8)
+
+p = tf.add_paragraph()
+p.text = "• Submission Window: Open 24/7 until Week 5 Kickoff"
+p.font.name = FONT_BODY
+p.font.size = Pt(13)
+p.font.color.rgb = WHITE
+p.space_before = Pt(8)
 p.space_after = Pt(16)
 
 p = tf.add_paragraph()
-p.text = "Notice the trailing '==' padding — the classic tell of Base64 encoding!"
+p.text = "💡 Hint: Inspect client-side source code carefully. Encoding is not encryption!"
 p.font.name = FONT_BODY
 p.font.size = Pt(12)
 p.font.italic = True
 p.font.color.rgb = SLATE_LIGHT
 
-# Right Column: Decode Base64
+# Right Column: Solution Postponement & Leaderboard
 card_s2 = slide7.shapes.add_shape(
     MSO_SHAPE.ROUNDED_RECTANGLE,
     Inches(6.933),
@@ -948,53 +956,49 @@ tf.margin_right = Inches(0.4)
 tf.margin_top = Inches(0.35)
 
 p = tf.paragraphs[0]
-p.text = "STEP 2: DECODE BASE64"
+p.text = "⏳ SOLUTION REVEAL & DEBRIEF"
 p.font.name = FONT_CODE
 p.font.size = Pt(15)
 p.font.bold = True
 p.font.color.rgb = GREEN_ACCENT
 
 p = tf.add_paragraph()
-p.text = "METHOD A: BASH CLI"
+p.text = "• Full Walkthrough Next Week:"
 p.font.name = FONT_CODE
 p.font.size = Pt(12)
 p.font.bold = True
 p.font.color.rgb = AMBER
-p.space_before = Pt(10)
+p.space_before = Pt(12)
 
 p = tf.add_paragraph()
-p.text = '$ echo "c2ZidXt3M2xjMG0zX3QwX2I0eXMzY18yMDI2fQ==" | base64 -d'
-p.font.name = FONT_CODE
-p.font.size = Pt(10.5)
+p.text = "The complete step-by-step exploit breakdown and source inspection solution will be revealed at the START OF NEXT WEEK'S SESSION (Week 5)!"
+p.font.name = FONT_BODY
+p.font.size = Pt(12.5)
 p.font.color.rgb = WHITE
+p.space_before = Pt(4)
 p.space_after = Pt(14)
 
 p = tf.add_paragraph()
-p.text = "METHOD B: CYBERCHEF"
+p.text = "• Lock In Your Points:"
 p.font.name = FONT_CODE
 p.font.size = Pt(12)
 p.font.bold = True
 p.font.color.rgb = AMBER
 
 p = tf.add_paragraph()
-p.text = "Paste into CyberChef ➔ Add recipe 'From Base64'"
+p.text = "Submit before next week to claim your points and advance your tier ranking."
 p.font.name = FONT_BODY
-p.font.size = Pt(13)
+p.font.size = Pt(12.5)
 p.font.color.rgb = WHITE
-p.space_after = Pt(16)
+p.space_before = Pt(4)
+p.space_after = Pt(14)
 
 p = tf.add_paragraph()
-p.text = "FLAG RECOVERED:"
+p.text = "TRACK LIVE STANDINGS: baysec/leaderboard.html"
 p.font.name = FONT_CODE
-p.font.size = Pt(12)
-p.font.color.rgb = SLATE_MUTED
-
-p = tf.add_paragraph()
-p.text = "sfbu{w3lc0m3_t0_b4ys3c_2026}"
-p.font.name = FONT_CODE
-p.font.size = Pt(15)
+p.font.size = Pt(11.5)
 p.font.bold = True
-p.font.color.rgb = GREEN_ACCENT
+p.font.color.rgb = CYAN
 
 # Bottom Key Takeaway Callout
 takeaway = slide7.shapes.add_shape(
@@ -1006,12 +1010,12 @@ takeaway = slide7.shapes.add_shape(
 )
 takeaway.fill.solid()
 takeaway.fill.fore_color.rgb = RGBColor(15, 23, 42)
-takeaway.line.color.rgb = RED_ACCENT
+takeaway.line.color.rgb = CYAN
 takeaway.line.width = Pt(1.5)
 tf_take = takeaway.text_frame
 tf_take.vertical_anchor = MSO_ANCHOR.MIDDLE
 p = tf_take.paragraphs[0]
-p.text = "⚠️ KEY TAKEAWAY: Never store secrets, comments, or sensitive auth logic inside client-rendered markup."
+p.text = "🏆 Every challenge solved earns points toward end-of-semester Sentinel & Grandmaster prizes!"
 p.font.name = FONT_BODY
 p.font.size = Pt(13.5)
 p.font.bold = True
@@ -1020,8 +1024,9 @@ p.alignment = PP_ALIGN.CENTER
 
 add_speaker_notes(
     slide7,
-    "Great job to everyone who caught that! The core flaw here is trusting the client side. "
-    "If it ships to the user's browser—even inside an HTML comment—it’s public knowledge. Base64 is encoding, not encryption."
+    "If you solved Challenge 0x01, submit your token on the portal to secure your 100 points! "
+    "If you haven't cracked it yet, you have all week until our next meeting. "
+    "We will reveal and walk through the complete step-by-step solution at the start of Week 5."
 )
 
 # ===========================================================================

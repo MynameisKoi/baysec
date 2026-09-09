@@ -713,46 +713,42 @@
             <!-- SLIDE 7 -->
             <section class="slide" data-slide="7">
                 <div class="slide-header">
-                    <span class="slide-tag">LAB DEBRIEF</span>
-                    <h2 class="slide-title">0x02 Solution: Dissecting the Uplink</h2>
-                    <p class="slide-subtitle">Analyzing how unencrypted application telemetry reveals authorization secrets.</p>
+                    <span class="slide-tag">LEAGUE COMPETITION</span>
+                    <h2 class="slide-title">Challenge 0x02: Rules &amp; Submission</h2>
+                    <p class="slide-subtitle">How to submit your token, earn points, and climb the seasonal leaderboard.</p>
                 </div>
 
                 <div class="grid-2">
                     <div class="card cyan-accent">
-                        <div class="card-header" style="color: var(--cyan);">STEP 1: FILTER & IDENTIFY</div>
-                        <ul style="list-style: none; font-size: 0.95rem; line-height: 1.6;">
-                            <li>Apply display filter: <code>http</code> or <code>port 8080</code></li>
-                            <li style="margin-top: 10px;">Notice Packet #15: A <code>POST /api/v2/telemetry/uplink</code> request:</li>
+                        <div class="card-header" style="color: var(--cyan);">🚩 EARN LEAGUE POINTS</div>
+                        <ul style="list-style: none; font-size: 0.95rem; line-height: 1.8;">
+                            <li>• <strong>Point Value:</strong> <span style="color: var(--green); font-weight: bold;">+150 Points</span> on Master Leaderboard</li>
+                            <li>• <strong>Flag Format:</strong> <code>sfbu{...}</code></li>
+                            <li>• <strong>Target Portal:</strong> <a href="index.html" target="_blank" style="color: var(--cyan); text-decoration: underline;">tinyurl.com/baysec-week5</a></li>
+                            <li>• <strong>Analysis Options:</strong> In-browser CyberShark or raw <code>.pcap</code> download</li>
                         </ul>
-                        <div class="code-box" style="margin-top: 12px; font-size: 0.8rem;">
-POST /api/v2/telemetry/uplink HTTP/1.1<br>
-Host: gateway.baysec.sfbu:8080<br>
-Authorization: Basic c2ZidV9hZG1pbj...==
-                        </div>
-                        <div style="font-size: 0.85rem; color: var(--text-muted); font-style: italic; margin-top: 8px;">
-                            Unlike encrypted TLS on 443, port 8080 was running unencrypted plaintext HTTP!
+                        <div style="font-size: 0.85rem; color: var(--text-muted); font-style: italic; margin-top: 14px;">
+                            💡 Hints: Filter for <code>http</code> or <code>port 8080</code>. Inspect the HTTP POST payload!
                         </div>
                     </div>
 
                     <div class="card green-accent">
-                        <div class="card-header" style="color: var(--green);">STEP 2: INSPECT PAYLOAD</div>
-                        <p style="font-size: 0.85rem; color: var(--amber); font-weight: bold; margin-bottom: 4px;">HTML FORM URL ENCODED PAYLOAD:</p>
-                        <div class="code-box" style="color: #fff; font-size: 0.8rem;">
-station_id=SFBU-LAB-01&<br>
-operator_callsign=0xGhost&<br>
-auth_token=sfbu{w1r3sh4rk_p4ck3t_sn1ff3r_2026}
-                        </div>
-
-                        <div style="margin-top: 14px; padding: 10px; background: rgba(74, 222, 128, 0.1); border: 1px solid var(--green); border-radius: 6px;">
-                            <div style="font-size: 0.75rem; color: var(--green); font-weight: bold;">FLAG RECOVERED:</div>
-                            <div style="font-family: 'Fira Code', monospace; font-size: 1.05rem; font-weight: bold; color: #fff;">sfbu{w1r3sh4rk_p4ck3t_sn1ff3r_2026}</div>
+                        <div class="card-header" style="color: var(--green);">⏳ SOLUTION REVEAL &amp; DEBRIEF</div>
+                        <p style="font-size: 0.95rem; color: #e2e8f0; line-height: 1.6; margin-bottom: 12px;">
+                            The full step-by-step packet dissection and forensic breakdown will be revealed at the <strong>start of next week's session (Week 6)</strong>!
+                        </p>
+                        <p style="font-size: 0.9rem; color: var(--text-muted); line-height: 1.5; margin-bottom: 12px;">
+                            Submit your token before next week's kickoff to lock in your score and claim the Operator or Sentinel badge!
+                        </p>
+                        <div style="padding: 10px; background: rgba(0, 240, 255, 0.08); border: 1px solid var(--cyan); border-radius: 6px;">
+                            <span style="font-size: 0.8rem; color: var(--cyan); font-weight: bold;">LIVE STANDINGS:</span>
+                            <div style="font-family: 'Fira Code', monospace; font-size: 0.95rem; color: #fff; margin-top: 4px;">baysec/leaderboard.html</div>
                         </div>
                     </div>
                 </div>
 
-                <div class="callout-banner" style="border-color: var(--red); color: #fca5a5;">
-                    ⚠️ KEY TAKEAWAY: Plaintext traffic over standard or non-standard ports (80, 8080) leaks credentials to any network tap.
+                <div class="callout-banner">
+                    🏆 Every flag submitted pushes you closer to end-of-semester Sentinel &amp; Grandmaster hardware prizes!
                 </div>
             </section>
 
@@ -815,7 +811,7 @@ auth_token=sfbu{w1r3sh4rk_p4ck3t_sn1ff3r_2026}
             4: "Packets are like Russian nesting dolls. An Ethernet frame carries an IP packet, which carries a TCP segment, which carries HTTP data. Every reliable connection on the internet starts with that 3-way handshake: SYN, SYN-ACK, ACK. When we look at Wireshark, we can see every step.",
             5: "The most powerful feature for beginners in Wireshark is 'Follow TCP Stream.' Instead of looking at individual TCP fragments, Wireshark stitches the entire HTTP conversation back together into plain text. Let's put this into practice right now.",
             6: "Time for Challenge 0x02! Pull out your laptops or phones and scan the QR code. You can analyze the traffic directly in your browser using our CyberShark tool, or download the .pcap to open it in Wireshark. Find the operator's authentication token and submit the flag. 5 minutes on the clock—go!",
-            7: "Great work everyone! As you saw, finding the flag was as simple as filtering for 'http' or 'port 8080' and opening Packet 15. Because the server did not enforce HTTPS, the auth token was transmitted in plain ASCII text. That is why TLS encryption is mandatory in production.",
+            7: "If you found the flag in the uplink, submit it on the portal to lock in your +150 points! If you are still working through the capture, don't worry—the challenge is open all week. You can analyze it in CyberShark or download the PCAP for Wireshark. The full step-by-step solution and forensic breakdown will be revealed at the start of Week 6.",
             8: "Next week we dive into Reconnaissance: scanning subnets with Nmap and hunting open-source intelligence with Google Dorks. Make sure you're in WhatsApp for lab files. Thank you everyone, let's open the floor for questions!"
         };
 

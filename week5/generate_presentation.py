@@ -752,7 +752,7 @@ add_speaker_notes(
 # SLIDE 7: Challenge Solution Walkthrough
 # ===========================================================================
 slide7 = create_slide()
-content_top = add_header(slide7, "0x02 Solution: Dissecting the Uplink", "Lab Debrief")
+content_top = add_header(slide7, "Challenge 0x02: Rules & Submission", "League Competition")
 
 col_w = Inches(5.6)
 col_h = Inches(4.3)
@@ -769,36 +769,44 @@ tf.margin_right = Inches(0.4)
 tf.margin_top = Inches(0.35)
 
 p = tf.paragraphs[0]
-p.text = "STEP 1: FILTER & IDENTIFY"
+p.text = "🚩 EARN LEAGUE POINTS"
 p.font.name = FONT_CODE
 p.font.size = Pt(15)
 p.font.bold = True
 p.font.color.rgb = CYAN
 
 p = tf.add_paragraph()
-p.text = "• Apply display filter: http or port 8080"
+p.text = "• Point Value: +150 Points on Master Leaderboard"
 p.font.name = FONT_BODY
 p.font.size = Pt(13.5)
-p.font.color.rgb = WHITE
-p.space_before = Pt(10)
+p.font.bold = True
+p.font.color.rgb = GREEN_ACCENT
+p.space_before = Pt(12)
 
 p = tf.add_paragraph()
-p.text = "• Notice Packet #15: A POST request to /api/v2/telemetry/uplink:"
+p.text = "• Flag Format: sfbu{...}"
 p.font.name = FONT_BODY
-p.font.size = Pt(13.5)
+p.font.size = Pt(13)
 p.font.color.rgb = WHITE
 p.space_before = Pt(8)
-p.space_after = Pt(10)
 
 p = tf.add_paragraph()
-p.text = "POST /api/v2/telemetry/uplink HTTP/1.1\nHost: gateway.baysec.sfbu:8080\nAuthorization: Basic c2ZidV9hZG1pbj...=="
-p.font.name = FONT_CODE
-p.font.size = Pt(11)
-p.font.color.rgb = GREEN_ACCENT
-p.space_after = Pt(14)
+p.text = "• Target Portal: tinyurl.com/baysec-week5"
+p.font.name = FONT_BODY
+p.font.size = Pt(13)
+p.font.color.rgb = WHITE
+p.space_before = Pt(8)
 
 p = tf.add_paragraph()
-p.text = "Unlike encrypted TLS traffic on 443, port 8080 was running unencrypted plaintext HTTP!"
+p.text = "• Analysis Tools: In-browser CyberShark or raw .pcap download"
+p.font.name = FONT_BODY
+p.font.size = Pt(13)
+p.font.color.rgb = WHITE
+p.space_before = Pt(8)
+p.space_after = Pt(16)
+
+p = tf.add_paragraph()
+p.text = "💡 Hint: Filter for http or port 8080. Inspect the HTTP POST payload!"
 p.font.name = FONT_BODY
 p.font.size = Pt(12)
 p.font.italic = True
@@ -816,49 +824,59 @@ tf.margin_right = Inches(0.4)
 tf.margin_top = Inches(0.35)
 
 p = tf.paragraphs[0]
-p.text = "STEP 2: INSPECT PAYLOAD"
+p.text = "⏳ SOLUTION REVEAL & DEBRIEF"
 p.font.name = FONT_CODE
 p.font.size = Pt(15)
 p.font.bold = True
 p.font.color.rgb = GREEN_ACCENT
 
 p = tf.add_paragraph()
-p.text = "Expand 'HTML Form URL Encoded' or examine raw Hex Dump:"
-p.font.name = FONT_BODY
-p.font.size = Pt(13)
-p.font.color.rgb = WHITE
-p.space_before = Pt(8)
-p.space_after = Pt(10)
+p.text = "• Full Walkthrough Next Week:"
+p.font.name = FONT_CODE
+p.font.size = Pt(12)
+p.font.bold = True
+p.font.color.rgb = AMBER
+p.space_before = Pt(12)
 
 p = tf.add_paragraph()
-p.text = "station_id=SFBU-LAB-01&\noperator_callsign=0xGhost&\nauth_token=sfbu{w1r3sh4rk_p4ck3t_sn1ff3r_2026}"
-p.font.name = FONT_CODE
-p.font.size = Pt(11)
-p.font.color.rgb = AMBER
+p.text = "The complete step-by-step packet dissection and forensic breakdown will be revealed at the START OF NEXT WEEK'S SESSION (Week 6)!"
+p.font.name = FONT_BODY
+p.font.size = Pt(12.5)
+p.font.color.rgb = WHITE
+p.space_before = Pt(4)
 p.space_after = Pt(14)
 
 p = tf.add_paragraph()
-p.text = "FLAG RECOVERED:"
+p.text = "• Advance Your Rank:"
 p.font.name = FONT_CODE
 p.font.size = Pt(12)
-p.font.color.rgb = SLATE_MUTED
+p.font.bold = True
+p.font.color.rgb = AMBER
 
 p = tf.add_paragraph()
-p.text = "sfbu{w1r3sh4rk_p4ck3t_sn1ff3r_2026}"
+p.text = "Submit before next week to claim your points and unlock the Operator or Sentinel tier badge."
+p.font.name = FONT_BODY
+p.font.size = Pt(12.5)
+p.font.color.rgb = WHITE
+p.space_before = Pt(4)
+p.space_after = Pt(14)
+
+p = tf.add_paragraph()
+p.text = "TRACK LIVE STANDINGS: baysec/leaderboard.html"
 p.font.name = FONT_CODE
-p.font.size = Pt(15)
+p.font.size = Pt(11.5)
 p.font.bold = True
-p.font.color.rgb = GREEN_ACCENT
+p.font.color.rgb = CYAN
 
 takeaway = slide7.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(0.8), Inches(6.25), Inches(11.733), Inches(0.65))
 takeaway.fill.solid()
 takeaway.fill.fore_color.rgb = RGBColor(15, 23, 42)
-takeaway.line.color.rgb = RED_ACCENT
+takeaway.line.color.rgb = CYAN
 takeaway.line.width = Pt(1.5)
 tf_take = takeaway.text_frame
 tf_take.vertical_anchor = MSO_ANCHOR.MIDDLE
 p = tf_take.paragraphs[0]
-p.text = "⚠️ KEY TAKEAWAY: Plaintext traffic over standard or non-standard ports (80, 8080) leaks credentials to any network tap."
+p.text = "🏆 Every flag submitted pushes you closer to end-of-semester Sentinel & Grandmaster hardware prizes!"
 p.font.name = FONT_BODY
 p.font.size = Pt(13)
 p.font.bold = True
@@ -867,8 +885,10 @@ p.alignment = PP_ALIGN.CENTER
 
 add_speaker_notes(
     slide7,
-    "Great work everyone! As you saw, finding the flag was as simple as filtering for 'http' or 'port 8080' and opening Packet 15. "
-    "Because the server did not enforce HTTPS, the auth token was transmitted in plain ASCII text. That is why TLS encryption is mandatory in production."
+    "If you found the flag in the uplink, submit it on the portal to lock in your +150 points! "
+    "If you are still working through the capture, don't worry—the challenge is open all week. "
+    "You can analyze it in CyberShark or download the PCAP for Wireshark. "
+    "The full step-by-step solution and forensic breakdown will be revealed at the start of Week 6."
 )
 
 # ===========================================================================

@@ -790,46 +790,42 @@
             <!-- ================= SLIDE 7 ================= -->
             <section class="slide" data-slide="7">
                 <div class="slide-header">
-                    <span class="slide-tag">DEBRIEF & WALKTHROUGH</span>
-                    <h2 class="slide-title">0x01 Solution: Client-Side Exposure</h2>
-                    <p class="slide-subtitle">Analyzing how client-side data leaks compromise authentication systems.</p>
+                    <span class="slide-tag">LEAGUE COMPETITION</span>
+                    <h2 class="slide-title">Challenge 0x01: Rules &amp; Submission</h2>
+                    <p class="slide-subtitle">How to submit your token, earn points, and climb the seasonal leaderboard.</p>
                 </div>
 
                 <div class="grid-2">
                     <div class="card cyan-accent">
-                        <div class="card-header" style="color: var(--cyan);">STEP 1: INSPECT THE DOM</div>
-                        <ul style="list-style: none; font-size: 0.95rem; line-height: 1.6;">
-                            <li>Press <kbd style="background: #000; padding: 2px 6px; border-radius: 4px; border: 1px solid #334155;">F12</kbd> or Right-Click ➔ <strong>Inspect Element</strong></li>
-                            <li style="margin-top: 10px;">Check comments embedded directly inside the <code>&lt;body&gt;</code>:</li>
+                        <div class="card-header" style="color: var(--cyan);">🚩 EARN LEAGUE POINTS</div>
+                        <ul style="list-style: none; font-size: 0.95rem; line-height: 1.8;">
+                            <li>• <strong>Point Value:</strong> <span style="color: var(--green); font-weight: bold;">+100 Points</span> on Master Leaderboard</li>
+                            <li>• <strong>Flag Format:</strong> <code>sfbu{...}</code></li>
+                            <li>• <strong>Portal:</strong> <a href="index.html" target="_blank" style="color: var(--cyan); text-decoration: underline;">tinyurl.com/baysec-week4</a></li>
+                            <li>• <strong>Window:</strong> Open 24/7 until our next meeting</li>
                         </ul>
-                        <div class="code-box" style="margin-top: 12px;">
-&lt;!-- The flag is here:<br>
-c2ZidXt3M2xjMG0zX3QwX2I0eXMzY18yMDI2fQ== --&gt;
-                        </div>
-                        <div style="font-size: 0.85rem; color: var(--text-muted); font-style: italic; margin-top: 8px;">
-                            Notice the trailing <code>==</code> padding — the trademark tell of Base64 encoding.
+                        <div style="font-size: 0.85rem; color: var(--text-muted); font-style: italic; margin-top: 14px;">
+                            💡 Hints: Inspect the client-side source code carefully. Encoding is not encryption!
                         </div>
                     </div>
 
                     <div class="card green-accent">
-                        <div class="card-header" style="color: var(--green);">STEP 2: DECODE BASE64</div>
-                        <p style="font-size: 0.85rem; color: var(--amber); font-weight: bold; margin-bottom: 4px;">METHOD A: TERMINAL PIPELINE</p>
-                        <div class="code-box" style="color: #fff;">
-echo "c2ZidXt3M2xjMG0zX3QwX2I0eXMzY18yMDI2fQ==" | base64 -d
-                        </div>
-
-                        <p style="font-size: 0.85rem; color: var(--amber); font-weight: bold; margin: 10px 0 4px;">METHOD B: CYBERCHEF</p>
-                        <p style="font-size: 0.9rem; color: var(--text-muted);">Paste into CyberChef ➔ Add recipe <strong>"From Base64"</strong></p>
-
-                        <div style="margin-top: 14px; padding: 10px; background: rgba(74, 222, 128, 0.1); border: 1px solid var(--green); border-radius: 6px;">
-                            <div style="font-size: 0.75rem; color: var(--green); font-weight: bold;">FLAG RECOVERED:</div>
-                            <div style="font-family: 'Fira Code', monospace; font-size: 1.05rem; font-weight: bold; color: #fff;">sfbu{w3lc0m3_t0_b4ys3c_2026}</div>
+                        <div class="card-header" style="color: var(--green);">⏳ SOLUTION REVEAL &amp; DEBRIEF</div>
+                        <p style="font-size: 0.95rem; color: #e2e8f0; line-height: 1.6; margin-bottom: 12px;">
+                            The full step-by-step technical walkthrough and exploit analysis will be revealed at the <strong>start of next week's session (Week 5)</strong>!
+                        </p>
+                        <p style="font-size: 0.9rem; color: var(--text-muted); line-height: 1.5; margin-bottom: 12px;">
+                            Submit before next week's kickoff to lock in your score and jump up the tier rankings!
+                        </p>
+                        <div style="padding: 10px; background: rgba(0, 240, 255, 0.08); border: 1px solid var(--cyan); border-radius: 6px;">
+                            <span style="font-size: 0.8rem; color: var(--cyan); font-weight: bold;">TRACK STANDINGS:</span>
+                            <div style="font-family: 'Fira Code', monospace; font-size: 0.95rem; color: #fff; margin-top: 4px;">baysec/leaderboard.html</div>
                         </div>
                     </div>
                 </div>
 
-                <div class="callout-banner alert">
-                    ⚠️ KEY TAKEAWAY: Never store secrets, comments, or sensitive auth logic inside client-rendered markup. Base64 is encoding, not encryption.
+                <div class="callout-banner">
+                    🏆 Every flag submitted pushes you closer to end-of-semester Sentinel &amp; Grandmaster hardware prizes!
                 </div>
             </section>
 
@@ -898,7 +894,7 @@ echo "c2ZidXt3M2xjMG0zX3QwX2I0eXMzY18yMDI2fQ==" | base64 -d
             4: "Every session we host is designed to be hands-on. Instead of dry lectures, we run live walkthroughs, simulate defenses, and build practical skills. Later this term, we’ll host a campus-wide Security Open House and cap it off with our own BaySec CTF.",
             5: "Security is a rep-based craft. You don’t need expensive certifications or paid subscriptions to start. TryHackMe's free tier, OverTheWire Bandit, and CyberChef are all you need to build muscle memory right now.",
             6: "Let's put this into practice immediately. Pull out your laptop or phone and go to the URL on screen. An operator left an authorization token lingering inside this page. Your mission is to find it and extract the flag. You have 5 minutes—go!",
-            7: "Great job to everyone who caught that! The core flaw here is trusting the client side. If it ships to the user's browser—even inside an HTML comment—it’s public knowledge. Base64 is encoding, not encryption.",
+            7: "If you solved Challenge 0x01, submit your token on the portal to secure your 100 points! If you haven't cracked it yet, you have all week until our next meeting. We will reveal and walk through the complete step-by-step solution at the start of Week 5.",
             8: "Next week, we kick off Lab 01 with Linux CLI survival skills and packet sniffing in Wireshark. Watch WhatsApp for the locked-in room and time slot. Thank you for coming out, and let’s open up the floor for any questions!"
         };
 
