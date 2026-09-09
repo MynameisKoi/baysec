@@ -623,9 +623,9 @@
 
         // Default / Kickoff fallback data
         const fallbackMembers = [
-            { handle: "0xViper", attendance: 1, challenges: 1, bonus: 0, points: 150, tier: "Sentinel" },
-            { handle: "CyberKoi", attendance: 1, challenges: 1, bonus: 0, points: 150, tier: "Sentinel" },
-            { handle: "BitPhantom", attendance: 1, challenges: 1, bonus: 0, points: 150, tier: "Sentinel" },
+            { handle: "0xViper", attendance: 1, challenges: 1, bonus: 0, points: 150, tier: "Operator" },
+            { handle: "CyberKoi", attendance: 1, challenges: 1, bonus: 0, points: 150, tier: "Operator" },
+            { handle: "BitPhantom", attendance: 1, challenges: 1, bonus: 0, points: 150, tier: "Operator" },
             { handle: "NetStalker", attendance: 1, challenges: 0, bonus: 0, points: 50, tier: "Initiate" },
             { handle: "ZeroTrace", attendance: 1, challenges: 0, bonus: 0, points: 50, tier: "Initiate" },
             { handle: "MatrixRebel", attendance: 1, challenges: 0, bonus: 0, points: 50, tier: "Initiate" },
@@ -636,6 +636,17 @@
         ];
 
         let currentMembers = [];
+
+        function getTier(explicitTier, points) {
+            if (explicitTier && explicitTier.trim() !== "") {
+                return explicitTier.trim();
+            }
+            if (points >= 1000) return "Grandmaster";
+            if (points >= 600) return "Breaker";
+            if (points >= 300) return "Sentinel";
+            if (points >= 150) return "Operator";
+            return "Initiate";
+        }
 
         function parseCSV(text) {
             const lines = text.trim().split('\n');
@@ -653,7 +664,7 @@
                 const challenges = parseInt(row[3]) || 0;
                 const bonus = parseInt(row[4]) || 0;
                 const points = parseInt(row[5]) || (attendance * 50 + challenges * 100 + bonus);
-                const tier = row[6] || (points >= 150 ? "Sentinel" : "Initiate");
+                const tier = getTier(row[6], points);
 
                 results.push({ handle, attendance, challenges, bonus, points, tier });
             }
