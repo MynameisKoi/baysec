@@ -10,7 +10,9 @@
             var path = window.location.pathname.toLowerCase();
             var search = window.location.search || "";
 
-            if (path.indexOf("week5") !== -1 || search.indexOf("week5") !== -1) {
+            if (path.indexOf("checkin") !== -1 || path.indexOf("attendance") !== -1) {
+                window.location.replace("/baysec/checkin.html" + search);
+            } else if (path.indexOf("week5") !== -1 || search.indexOf("week5") !== -1) {
                 window.location.replace("/baysec/week5/");
             } else if (path.indexOf("week4") !== -1 || search.indexOf("week4") !== -1) {
                 window.location.replace("/baysec/week4/");

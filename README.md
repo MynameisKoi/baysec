@@ -21,6 +21,7 @@
 ## 🌐 Live Portal & Challenges
 
 - **Main Gateway**: [https://MynameisKoi.github.io/baysec/](https://MynameisKoi.github.io/baysec/) *(redirects to active weekly challenge)*
+- **Weekly Check-In Portal**: [https://MynameisKoi.github.io/baysec/checkin.html](https://MynameisKoi.github.io/baysec/checkin.html)
 - **League Leaderboard**: [https://MynameisKoi.github.io/baysec/leaderboard.html](https://MynameisKoi.github.io/baysec/leaderboard.html)
 - **Week 5 Foundations Presentation**: [https://MynameisKoi.github.io/baysec/week5/presentation.html](https://MynameisKoi.github.io/baysec/week5/presentation.html)
 - **Week 5 Challenge (0x02)**: [https://MynameisKoi.github.io/baysec/week5/](https://MynameisKoi.github.io/baysec/week5/) — *Wireshark Packet Analysis & CyberShark*

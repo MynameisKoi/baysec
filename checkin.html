@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>BaySec — Weekly Attendance Gateway</title>
+    <link rel="icon" type="image/png" href="assets/baysec-blue.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600;700&family=Outfit:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0b0f19;
+            --surface: #111827;
+            --surface-elevated: #162032;
+            --border: #1f293d;
+            --cyan: #00f0ff;
+            --cyan-glow: rgba(0, 240, 255, 0.25);
+            --blue: #38bdf8;
+            --green: #4ade80;
+            --green-glow: rgba(74, 222, 128, 0.25);
+            --red: #ef4444;
+            --red-glow: rgba(239, 68, 68, 0.25);
+            --amber: #f59e0b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text-main);
+            font-family: 'Outfit', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 24px 16px;
+            background-image:
+                radial-gradient(circle at 15% 15%, rgba(0, 240, 255, 0.08) 0%, transparent 45%),
+                radial-gradient(circle at 85% 85%, rgba(74, 222, 128, 0.06) 0%, transparent 45%);
+            background-attachment: fixed;
+        }
+
+        .checkin-card {
+            width: 100%;
+            max-width: 480px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 32px 28px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4), 0 0 25px rgba(0, 240, 255, 0.08);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .checkin-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--cyan), #3b82f6, var(--green));
+        }
+
+        .brand-header {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .brand-logo {
+            width: 72px;
+            height: auto;
+            margin-bottom: 12px;
+            filter: drop-shadow(0 0 14px rgba(0, 240, 255, 0.35));
+        }
+
+        .week-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 14px;
+            border-radius: 999px;
+            background: rgba(0, 240, 255, 0.1);
+            color: var(--cyan);
+            border: 1px solid rgba(0, 240, 255, 0.3);
+            font-family: 'Fira Code', monospace;
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .pulse-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: var(--cyan);
+            box-shadow: 0 0 8px var(--cyan);
+            animation: pulse 1.8s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.4; transform: scale(0.8); }
+        }
+
+        h1 {
+            font-size: 1.6rem;
+            font-weight: 800;
+            color: #fff;
+            margin-bottom: 6px;
+        }
+
+        .subtitle {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            line-height: 1.5;
+        }
+
+        .form-group {
+            margin-bottom: 18px;
+            text-align: left;
+        }
+
+        label {
+            display: block;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .input-wrapper {
+            position: relative;
+        }
+
+        .input-box {
+            width: 100%;
+            padding: 12px 14px;
+            background: #090d16;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: #fff;
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.95rem;
+            outline: none;
+            transition: all 0.2s ease;
+        }
+
+        .input-box.code-input {
+            font-family: 'Fira Code', monospace;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--cyan);
+            font-weight: 700;
+        }
+
+        .input-box:focus {
+            border-color: var(--cyan);
+            box-shadow: 0 0 12px var(--cyan-glow);
+        }
+
+        .hint-text {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 5px;
+        }
+
+        .btn-checkin {
+            width: 100%;
+            padding: 14px;
+            margin-top: 8px;
+            border: none;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #0284c7 0%, #00f0ff 100%);
+            color: #040914;
+            font-family: 'Outfit', sans-serif;
+            font-weight: 800;
+            font-size: 1rem;
+            letter-spacing: 0.5px;
+            cursor: pointer;
+            transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+            box-shadow: 0 4px 15px rgba(0, 240, 255, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-checkin:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 240, 255, 0.5);
+        }
+
+        .btn-checkin:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Status Feedback Box */
+        .status-box {
+            margin-top: 20px;
+            padding: 14px 16px;
+            border-radius: 8px;
+            display: none;
+            animation: fadeIn 0.3s ease;
+            text-align: left;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .status-box.success {
+            display: block;
+            background: rgba(74, 222, 128, 0.08);
+            border: 1px solid var(--green);
+            color: #fff;
+        }
+
+        .status-box.error {
+            display: block;
+            background: rgba(239, 68, 68, 0.08);
+            border: 1px solid var(--red);
+            color: #fff;
+        }
+
+        .status-title {
+            font-family: 'Fira Code', monospace;
+            font-size: 0.88rem;
+            font-weight: 700;
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .status-box.success .status-title { color: var(--green); }
+        .status-box.error .status-title { color: var(--red); }
+
+        .status-body {
+            font-size: 0.85rem;
+            color: #cbd5e1;
+            line-height: 1.4;
+        }
+
+        /* Security Assurance Banner */
+        .security-footer {
+            margin-top: 24px;
+            padding-top: 16px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .security-footer a {
+            color: var(--cyan);
+            text-decoration: none;
+        }
+
+        .security-footer a:hover {
+            text-decoration: underline;
+        }
+
+        /* Spinner */
+        .spinner {
+            width: 18px;
+            height: 18px;
+            border: 2px solid rgba(4, 9, 20, 0.3);
+            border-top-color: #040914;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+
+    <main class="checkin-card">
+        <header class="brand-header">
+            <img src="assets/baysec-blue.png" alt="BaySec Crest" class="brand-logo" />
+            <div class="week-pill">
+                <span class="pulse-dot"></span>
+                <span id="weekLabel">WEEK 5 ATTENDANCE</span>
+            </div>
+            <h1>BaySec Check-In</h1>
+            <p class="subtitle">Enter your details and today's meeting passcode from the projector screen to claim your attendance points.</p>
+        </header>
+
+        <form id="checkinForm" onsubmit="handleCheckin(event)">
+            <div class="form-group">
+                <label for="handleInput">Hacker Alias / Handle</label>
+                <div class="input-wrapper">
+                    <input type="text" id="handleInput" class="input-box" placeholder="e.g. 0xViper or your first name" required autocomplete="username" />
+                </div>
+                <div class="hint-text">Matches your handle on the seasonal leaderboard.</div>
+            </div>
+
+            <div class="form-group">
+                <label for="emailInput">SFBU Student Email</label>
+                <div class="input-wrapper">
+                    <input type="email" id="emailInput" class="input-box" placeholder="e.g. student@student.sfbu.edu" required autocomplete="email" />
+                </div>
+                <div class="hint-text">Used for prize redemption and official club roster.</div>
+            </div>
+
+            <div class="form-group">
+                <label for="passcodeInput">Meeting Verification Passcode</label>
+                <div class="input-wrapper">
+                    <input type="text" id="passcodeInput" class="input-box code-input" placeholder="DISPLAYED ON PROJECTOR" required autocomplete="off" />
+                </div>
+                <div class="hint-text">Announced live during today's session. Rotates every meeting.</div>
+            </div>
+
+            <button type="submit" id="submitBtn" class="btn-checkin">
+                <span>CLAIM +50 LEAGUE POINTS</span>
+            </button>
+        </form>
+
+        <div id="statusBox" class="status-box">
+            <div id="statusTitle" class="status-title"></div>
+            <div id="statusBody" class="status-body"></div>
+        </div>
+
+        <footer class="security-footer">
+            <span>🛡️ Anti-Spoofing Protected</span>
+            <a href="leaderboard.html" target="_blank">View Leaderboard ➔</a>
+        </footer>
+    </main>
+
+    <script>
+        // =========================================================================
+        // CONFIGURATION
+        // =========================================================================
+        // Paste your deployed Google Apps Script Web App URL below:
+        // Format: https://script.google.com/macros/s/AKfycb.../exec
+        const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz_REPLACE_WITH_YOUR_DEPLOYED_SCRIPT_URL/exec";
+
+        // Read week parameter from URL: ?w=5 or default to 5
+        const urlParams = new URLSearchParams(window.location.search);
+        const currentWeekNum = parseInt(urlParams.get('w')) || 5;
+        document.getElementById('weekLabel').innerText = `WEEK ${currentWeekNum} ATTENDANCE`;
+
+        // If URL contains pre-filled handle or code (e.g. from saved profile)
+        if (urlParams.get('handle')) {
+            document.getElementById('handleInput').value = urlParams.get('handle');
+        }
+
+        async function handleCheckin(e) {
+            e.preventDefault();
+
+            const submitBtn = document.getElementById('submitBtn');
+            const statusBox = document.getElementById('statusBox');
+            const statusTitle = document.getElementById('statusTitle');
+            const statusBody = document.getElementById('statusBody');
+
+            const handle = document.getElementById('handleInput').value.trim();
+            const email = document.getElementById('emailInput').value.trim();
+            const passcode = document.getElementById('passcodeInput').value.trim().toUpperCase();
+
+            // Client-side quick check
+            if (!handle || !email || !passcode) {
+                showStatus(false, "MISSING FIELDS", "Please fill in all fields including the meeting passcode.");
+                return;
+            }
+
+            // Set loading state
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<div class="spinner"></div><span>VERIFYING CREDENTIALS...</span>';
+            statusBox.style.display = "none";
+
+            // If backend script URL has not been replaced yet, run in demo/setup mode:
+            if (APPS_SCRIPT_URL.includes("REPLACE_WITH_YOUR_DEPLOYED_SCRIPT_URL")) {
+                setTimeout(() => {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<span>CLAIM +50 LEAGUE POINTS</span>';
+                    showStatus(
+                        true,
+                        "GATEWAY READY (SETUP MODE)",
+                        `Validated locally for <strong>${handle}</strong> (Week ${currentWeekNum}). To enable live Google Sheet sync, paste your deployed Google Apps Script URL into checkin.html.`
+                    );
+                }, 800);
+                return;
+            }
+
+            try {
+                // Post to Google Apps Script Web App
+                const payload = {
+                    action: "checkin",
+                    week: currentWeekNum,
+                    handle: handle,
+                    email: email,
+                    passcode: passcode,
+                    timestamp: new Date().toISOString()
+                };
+
+                const response = await fetch(APPS_SCRIPT_URL, {
+                    method: "POST",
+                    headers: { "Content-Type": "text/plain;charset=utf-8" }, // avoids CORS preflight issues with Apps Script
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showStatus(
+                        true,
+                        "ATTENDANCE VERIFIED!",
+                        `+50 Points successfully credited to <strong>${handle}</strong> for Week ${currentWeekNum}. Your new total is <strong>${result.totalPoints || 'updated'} pts</strong>! Check the leaderboard to see your rank.`
+                    );
+                    document.getElementById('checkinForm').reset();
+                } else {
+                    showStatus(
+                        false,
+                        "CHECK-IN REJECTED",
+                        result.message || "Invalid passcode or attendance window is currently closed. Please check the screen."
+                    );
+                }
+            } catch (err) {
+                console.error("Check-in error:", err);
+                showStatus(
+                    false,
+                    "CONNECTION ERROR",
+                    "Could not reach the authentication server. Please ensure you are connected to internet, or notify an officer in the room."
+                );
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<span>CLAIM +50 LEAGUE POINTS</span>';
+            }
+        }
+
+        function showStatus(isSuccess, title, message) {
+            const statusBox = document.getElementById('statusBox');
+            const statusTitle = document.getElementById('statusTitle');
+            const statusBody = document.getElementById('statusBody');
+
+            statusBox.className = "status-box " + (isSuccess ? "success" : "error");
+            statusTitle.innerHTML = (isSuccess ? "✅ " : "❌ ") + title;
+            statusBody.innerHTML = message;
+            statusBox.style.display = "block";
+        }
+    </script>
+</body>
+</html>
