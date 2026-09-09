@@ -690,7 +690,7 @@ p.font.color.rgb = GREEN_ACCENT
 p.space_after = Pt(16)
 
 p = tf_t.add_paragraph()
-p.text = "TARGET PORTAL: https://MynameisKoi.github.io/baysec/week5/"
+p.text = "TARGET PORTAL: tinyurl.com/baysec-week5"
 p.font.name = FONT_CODE
 p.font.size = Pt(12)
 p.font.color.rgb = BLUE_ACCENT
@@ -735,7 +735,7 @@ p.font.bold = True
 p.font.color.rgb = CYAN
 p.alignment = PP_ALIGN.CENTER
 p = tf_q.add_paragraph()
-p.text = "or visit baysec/week5"
+p.text = "or visit tinyurl.com/baysec-week5"
 p.font.name = FONT_CODE
 p.font.size = Pt(10)
 p.font.color.rgb = SLATE_MUTED

@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>BaySec — Routing Portal</title>
+    <link rel="icon" type="image/png" href="assets/baysec-blue.png" />
+    <script>
+        (function() {
+            var path = window.location.pathname.toLowerCase();
+            var search = window.location.search || "";
+
+            if (path.indexOf("week5") !== -1 || search.indexOf("week5") !== -1) {
+                window.location.replace("/baysec/week5/");
+            } else if (path.indexOf("week4") !== -1 || search.indexOf("week4") !== -1) {
+                window.location.replace("/baysec/week4/");
+            } else if (path.indexOf("leaderboard") !== -1) {
+                window.location.replace("/baysec/leaderboard.html");
+            } else {
+                window.location.replace("/baysec/");
+            }
+        })();
+    </script>
+    <style>
+        body {
+            background-color: #0b0f19;
+            color: #00f0ff;
+            font-family: 'Courier New', Courier, monospace;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            text-align: center;
+            padding: 20px;
+        }
+        h1 { font-size: 1.6rem; margin-bottom: 12px; }
+        p { color: #94a3b8; margin-bottom: 24px; }
+        a {
+            color: #38bdf8;
+            text-decoration: underline;
+            margin: 0 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>BaySec Routing Gateway</h1>
+    <p>Redirecting to requested resource...</p>
+    <div>
+        <a href="/baysec/week4/">Week 4 Challenge</a> |
+        <a href="/baysec/week5/">Week 5 Challenge</a> |
+        <a href="/baysec/leaderboard.html">Leaderboard</a>
+    </div>
+</body>
+</html>
