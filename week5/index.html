@@ -448,6 +448,15 @@
             text-shadow: 0 0 8px rgba(239, 68, 68, 0.4);
         }
 
+        .status-easteregg {
+            color: var(--amber);
+            text-shadow: 0 0 10px rgba(245, 158, 11, 0.5);
+            background: rgba(245, 158, 11, 0.08);
+            border: 1px solid var(--amber);
+            padding: 12px 16px;
+            border-radius: 6px;
+        }
+
         @media (max-width: 900px) {
             .inspector-split {
                 grid-template-columns: 1fr;
@@ -560,9 +569,10 @@
             Format: <code>sfbu{...}</code> • Recovered from the intercepted HTTP transmission.
         </p>
 
-        <form class="submit-form" onsubmit="event.preventDefault(); verifyFlag();">
-            <input type="text" id="flagInput" class="input-token" placeholder="sfbu{...}" autocomplete="off" />
-            <button type="submit" class="btn-submit">SUBMIT TOKEN</button>
+        <form class="submit-form" onsubmit="event.preventDefault(); verifyFlag();" style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <input type="text" id="aliasInput" class="input-token" placeholder="Hacker Alias (e.g. 0xViper)" style="max-width: 240px;" autocomplete="username" />
+            <input type="text" id="flagInput" class="input-token" placeholder="Enter Flag sfbu{...} or Secret Token" autocomplete="off" style="flex: 1; min-width: 260px;" />
+            <button type="submit" class="btn-submit" id="submitBtn">SUBMIT</button>
         </form>
 
         <div id="statusMsg"></div>
@@ -840,19 +850,95 @@
             }
         }
 
-        function verifyFlag() {
-            const input = document.getElementById("flagInput").value.trim();
+        const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz_REPLACE_WITH_YOUR_DEPLOYED_SCRIPT_URL/exec";
+
+        // Restore saved alias if available
+        const savedAlias = localStorage.getItem("baysec_alias");
+        if (savedAlias && document.getElementById("aliasInput")) {
+            document.getElementById("aliasInput").value = savedAlias;
+        }
+
+        async function verifyFlag() {
+            const aliasInput = document.getElementById("aliasInput");
+            const flagInput = document.getElementById("flagInput");
             const status = document.getElementById("statusMsg");
             const logo = document.getElementById("brandLogo");
 
-            if (input === "sfbu{w1r3sh4rk_p4ck3t_sn1ff3r_2026}") {
-                status.className = "status-granted";
-                status.innerText = "ACCESS GRANTED. Flag Verified: +100 League Points!";
-                logo.src = "../assets/baysec-blue.png";
-            } else {
+            const handle = aliasInput ? aliasInput.value.trim() : "";
+            const input = flagInput.value.trim();
+
+            if (!input) {
                 status.className = "status-denied";
-                status.innerText = "ACCESS DENIED: Invalid flag format or incorrect payload token.";
-                logo.src = "../assets/baysec-red.png";
+                status.innerText = "Please enter a token or flag to verify.";
+                return;
+            }
+
+            if (handle) {
+                localStorage.setItem("baysec_alias", handle);
+            }
+
+            // 1. Check Easter Egg (Authorization Basic Header)
+            const easterEggVariations = [
+                "c2ZidV9hZG1pbjpoNGNrM3JfcDRzc3cwcmQ=",
+                "sfbu_admin:h4ck3r_p4ssw0rd",
+                "h4ck3r_p4ssw0rd",
+                "sfbu{h4ck3r_p4ssw0rd}"
+            ];
+
+            const isEasterEgg = easterEggVariations.some(v => v.toLowerCase() === input.toLowerCase());
+            const isMainFlag = (input === "sfbu{w1r3sh4rk_p4ck3t_sn1ff3r_2026}");
+
+            if (isEasterEgg) {
+                status.className = "status-easteregg";
+                status.innerHTML = `
+                    <div style="font-weight: bold; margin-bottom: 4px;">🌟 SECRET EASTER EGG UNLOCKED! (+50 Bonus Points)</div>
+                    <div style="font-size: 0.85rem; color: #fde68a;">
+                        You extracted and decoded the HTTP Basic Authorization credentials! (<code>sfbu_admin:h4ck3r_p4ssw0rd</code>)<br>
+                        ${handle ? `Bonus points logged for <strong>${handle}</strong>.` : '💡 Enter your Hacker Alias in the box above so an officer can log your bonus points!'}
+                    </div>
+                `;
+                logo.src = "../assets/baysec-blue.png";
+                syncWithLeaderboard("submit_flag", handle, input, true);
+                return;
+            }
+
+            if (isMainFlag) {
+                status.className = "status-granted";
+                status.innerHTML = `
+                    <div style="font-weight: bold; margin-bottom: 4px;">ACCESS GRANTED! Flag Verified (+100 Points)</div>
+                    <div style="font-size: 0.85rem; color: #bbf7d0;">
+                        Telemetry authentication token validated. ${handle ? `Points recorded for <strong>${handle}</strong>!` : 'Enter your Hacker Alias to track your score.'}
+                    </div>
+                `;
+                logo.src = "../assets/baysec-blue.png";
+                syncWithLeaderboard("submit_flag", handle, input, false);
+                return;
+            }
+
+            status.className = "status-denied";
+            status.innerText = "ACCESS DENIED: Invalid flag format or incorrect payload token.";
+            logo.src = "../assets/baysec-red.png";
+        }
+
+        async function syncWithLeaderboard(action, handle, flag, isEasterEgg) {
+            if (!handle || !APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes("REPLACE_WITH_YOUR_DEPLOYED_SCRIPT_URL")) {
+                return;
+            }
+            try {
+                await fetch(APPS_SCRIPT_URL, {
+                    method: "POST",
+                    headers: { "Content-Type": "text/plain;charset=utf-8" },
+                    body: JSON.stringify({
+                        action: action,
+                        week: 5,
+                        handle: handle,
+                        flag: flag,
+                        isEasterEgg: isEasterEgg,
+                        timestamp: new Date().toISOString()
+                    })
+                });
+            } catch (err) {
+                console.warn("Leaderboard sync skipped:", err);
             }
         }
 
