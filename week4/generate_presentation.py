@@ -57,7 +57,7 @@ def make_qr(data: str, filename: str, fill_color="black", back_color="white") ->
     img.save(path)
     return path
 
-QR_ATTENDANCE = make_qr("https://forms.gle/sfbu-baysec-attendance", "qr_attendance.png")
+QR_ATTENDANCE = make_qr("https://forms.gle/b5oD4hmCSG41ZcLp7", "qr_attendance.png")
 QR_WHATSAPP = os.path.join(ASSETS_DIR, "qr.png")
 QR_CHALLENGE = make_qr("https://MynameisKoi.github.io/baysec/week4/", "qr_challenge.png")
 

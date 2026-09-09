@@ -1,0 +1,11 @@
+Handle,Email,Attendance_Count,Challenges_Solved,Bonus_Points,Total_Points,Tier
+0xViper,student1@student.sfbu.edu,1,1,0,150,Sentinel
+CyberKoi,student2@student.sfbu.edu,1,1,0,150,Sentinel
+BitPhantom,student3@student.sfbu.edu,1,1,0,150,Sentinel
+NetStalker,student4@student.sfbu.edu,1,0,0,50,Initiate
+ZeroTrace,student5@student.sfbu.edu,1,0,0,50,Initiate
+MatrixRebel,student6@student.sfbu.edu,1,0,0,50,Initiate
+NullPointer,student7@student.sfbu.edu,1,0,0,50,Initiate
+EchoBreaker,student8@student.sfbu.edu,1,0,0,50,Initiate
+ByteHawk,student9@student.sfbu.edu,1,0,0,50,Initiate
+RootAdmin,student10@student.sfbu.edu,1,0,0,50,Initiate

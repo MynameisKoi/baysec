@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>BaySec @ SFBU — League Leaderboard</title>
+    <link rel="icon" type="image/png" href="assets/baysec-blue.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600;700&family=Outfit:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0b0f19;
+            --surface: #111827;
+            --surface-elevated: #162032;
+            --border: #1f293d;
+            --cyan: #00f0ff;
+            --cyan-glow: rgba(0, 240, 255, 0.25);
+            --blue: #38bdf8;
+            --red: #ef4444;
+            --red-glow: rgba(239, 68, 68, 0.25);
+            --gold: #f59e0b;
+            --silver: #94a3b8;
+            --bronze: #d97706;
+            --green: #4ade80;
+            --purple: #a855f7;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text-main);
+            font-family: 'Outfit', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background-image: 
+                radial-gradient(circle at 15% 15%, rgba(0, 240, 255, 0.06) 0%, transparent 45%),
+                radial-gradient(circle at 85% 85%, rgba(239, 68, 68, 0.05) 0%, transparent 45%);
+            background-attachment: fixed;
+        }
+
+        /* Top Navbar */
+        .navbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 32px;
+            background: rgba(17, 24, 39, 0.85);
+            backdrop-filter: blur(14px);
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .brand-logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .brand-logo img {
+            width: 36px;
+            height: auto;
+            filter: drop-shadow(0 0 10px var(--cyan-glow));
+        }
+
+        .brand-title {
+            font-weight: 800;
+            font-size: 1.15rem;
+            letter-spacing: 0.5px;
+            background: linear-gradient(135deg, #fff 40%, var(--cyan) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .nav-link {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 600;
+            padding: 6px 14px;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+        }
+
+        .nav-link:hover, .nav-link.active {
+            color: var(--cyan);
+            background: rgba(0, 240, 255, 0.08);
+        }
+
+        .nav-btn-action {
+            background: #0284c7;
+            color: #fff;
+            padding: 8px 16px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.88rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s ease;
+        }
+
+        .nav-btn-action:hover {
+            background: #0369a1;
+            box-shadow: 0 0 14px rgba(2, 132, 199, 0.4);
+        }
+
+        /* Container */
+        .container {
+            max-width: 1160px;
+            margin: 0 auto;
+            padding: 40px 24px 60px;
+            width: 100%;
+            flex: 1;
+        }
+
+        /* Hero Header */
+        .hero {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .badge {
+            display: inline-block;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.8rem;
+            color: var(--cyan);
+            background: rgba(0, 240, 255, 0.1);
+            border: 1px solid rgba(0, 240, 255, 0.3);
+            padding: 4px 14px;
+            border-radius: 999px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            margin-bottom: 14px;
+        }
+
+        .hero h1 {
+            font-size: 2.8rem;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            margin-bottom: 12px;
+            color: #fff;
+        }
+
+        .hero p {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+            max-width: 680px;
+            margin: 0 auto 24px;
+            line-height: 1.6;
+        }
+
+        /* League Rules Pill Container */
+        .rules-bar {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 14px;
+            margin-bottom: 44px;
+        }
+
+        .rule-pill {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            padding: 10px 18px;
+            border-radius: 8px;
+            font-size: 0.88rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .rule-pill strong {
+            color: var(--cyan);
+            font-family: 'Fira Code', monospace;
+        }
+
+        /* Podium Section (Top 3) */
+        .podium {
+            display: grid;
+            grid-template-columns: 1fr 1.15fr 1fr;
+            gap: 20px;
+            align-items: end;
+            margin-bottom: 48px;
+        }
+
+        .podium-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 28px 20px 24px;
+            text-align: center;
+            position: relative;
+            transition: transform 0.3s ease, border-color 0.3s ease;
+        }
+
+        .podium-card:hover {
+            transform: translateY(-4px);
+        }
+
+        .podium-card.gold {
+            border-color: var(--gold);
+            box-shadow: 0 10px 30px rgba(245, 158, 11, 0.15);
+            background: linear-gradient(180deg, rgba(245, 158, 11, 0.08) 0%, var(--surface) 100%);
+            padding-top: 36px;
+        }
+
+        .podium-card.silver {
+            border-color: var(--silver);
+            box-shadow: 0 8px 24px rgba(148, 163, 184, 0.1);
+        }
+
+        .podium-card.bronze {
+            border-color: var(--bronze);
+            box-shadow: 0 8px 24px rgba(217, 119, 6, 0.1);
+        }
+
+        .rank-crown {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Fira Code', monospace;
+            font-weight: 800;
+            font-size: 1.2rem;
+            margin: 0 auto 12px;
+        }
+
+        .gold .rank-crown {
+            background: var(--gold);
+            color: #000;
+            box-shadow: 0 0 16px rgba(245, 158, 11, 0.5);
+        }
+
+        .silver .rank-crown {
+            background: var(--silver);
+            color: #000;
+        }
+
+        .bronze .rank-crown {
+            background: var(--bronze);
+            color: #fff;
+        }
+
+        .podium-handle {
+            font-family: 'Fira Code', monospace;
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 6px;
+        }
+
+        .podium-points {
+            font-size: 1.6rem;
+            font-weight: 800;
+            color: var(--cyan);
+            margin-bottom: 12px;
+        }
+
+        .podium-badge {
+            display: inline-block;
+            font-size: 0.72rem;
+            font-weight: 700;
+            padding: 3px 10px;
+            border-radius: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Leaderboard Controls (Search & Refresh) */
+        .table-controls {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .search-box {
+            position: relative;
+            flex: 1;
+            max-width: 380px;
+        }
+
+        .search-input {
+            width: 100%;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            color: #fff;
+            padding: 10px 14px 10px 38px;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 0.95rem;
+            outline: none;
+            transition: all 0.2s ease;
+        }
+
+        .search-input:focus {
+            border-color: var(--cyan);
+            box-shadow: 0 0 10px var(--cyan-glow);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            pointer-events: none;
+        }
+
+        .status-sync {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            font-family: 'Fira Code', monospace;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .sync-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--green);
+            box-shadow: 0 0 8px var(--green);
+        }
+
+        /* Leaderboard Table */
+        .table-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        th {
+            background: var(--surface-elevated);
+            color: var(--text-muted);
+            font-family: 'Fira Code', monospace;
+            font-size: 0.78rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        td {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.95rem;
+            vertical-align: middle;
+        }
+
+        tbody tr {
+            transition: background 0.15s ease;
+        }
+
+        tbody tr:hover {
+            background: rgba(0, 240, 255, 0.03);
+        }
+
+        .rank-num {
+            font-family: 'Fira Code', monospace;
+            font-weight: 700;
+            color: var(--text-muted);
+            width: 50px;
+        }
+
+        .rank-top1 { color: var(--gold); }
+        .rank-top2 { color: var(--silver); }
+        .rank-top3 { color: var(--bronze); }
+
+        .handle-cell {
+            font-family: 'Fira Code', monospace;
+            font-weight: 700;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .handle-avatar {
+            width: 30px;
+            height: 30px;
+            border-radius: 6px;
+            background: var(--surface-elevated);
+            border: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.85rem;
+        }
+
+        .tier-badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-family: 'Fira Code', monospace;
+            font-weight: 600;
+        }
+
+        .tier-sentinel {
+            background: rgba(0, 240, 255, 0.12);
+            color: var(--cyan);
+            border: 1px solid rgba(0, 240, 255, 0.3);
+        }
+
+        .tier-breaker {
+            background: rgba(239, 68, 68, 0.12);
+            color: var(--red);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .tier-initiate {
+            background: rgba(148, 163, 184, 0.12);
+            color: var(--silver);
+            border: 1px solid rgba(148, 163, 184, 0.3);
+        }
+
+        .points-cell {
+            font-family: 'Fira Code', monospace;
+            font-weight: 800;
+            color: var(--cyan);
+            font-size: 1.1rem;
+        }
+
+        /* Empty State */
+        .empty-state {
+            padding: 40px;
+            text-align: center;
+            color: var(--text-muted);
+        }
+
+        /* Footer */
+        footer {
+            padding: 30px 24px;
+            text-align: center;
+            border-top: 1px solid var(--border);
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-top: auto;
+        }
+
+        footer a {
+            color: var(--cyan);
+            text-decoration: none;
+        }
+
+        @media (max-width: 820px) {
+            .podium {
+                grid-template-columns: 1fr;
+            }
+            .podium-card.gold {
+                order: -1;
+            }
+            .navbar {
+                padding: 12px 18px;
+            }
+            .nav-links {
+                display: none;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Top Navigation Bar -->
+    <nav class="navbar">
+        <a href="index.html" class="brand-logo">
+            <img src="assets/baysec-blue.png" alt="BaySec Crest" />
+            <span class="brand-title">BaySec League</span>
+        </a>
+
+        <div class="nav-links">
+            <a href="week4/" class="nav-link">Active Challenge</a>
+            <a href="week4/presentation.html" class="nav-link">Kickoff Deck</a>
+            <a href="leaderboard.html" class="nav-link active">Leaderboard</a>
+        </div>
+
+        <a href="https://forms.gle/b5oD4hmCSG41ZcLp7" target="_blank" class="nav-btn-action">
+            📝 Check-In Form
+        </a>
+    </nav>
+
+    <!-- Main Container -->
+    <main class="container">
+
+        <!-- Hero Header -->
+        <header class="hero">
+            <span class="badge">Fall 2026 Competitive Season</span>
+            <h1>Cybersecurity League Standings</h1>
+            <p>
+                Earn points each week through meeting attendance, solving practical hands-on labs, and ranking in our final BaySec CTF. Top performers earn custom merch and tech prizes at the end of the term!
+            </p>
+
+            <!-- Rules Summary Pills -->
+            <div class="rules-bar">
+                <div class="rule-pill">
+                    <span>📅 Attendance:</span>
+                    <strong>+50 pts</strong>
+                </div>
+                <div class="rule-pill">
+                    <span>🚩 Weekly Challenge:</span>
+                    <strong>+100 to 150 pts</strong>
+                </div>
+                <div class="rule-pill">
+                    <span>🏆 Flagship CTF:</span>
+                    <strong>Grand Prizes</strong>
+                </div>
+            </div>
+        </header>
+
+        <!-- Top 3 Podium -->
+        <section class="podium" id="podiumSection">
+            <!-- Rendered dynamically by JavaScript -->
+        </section>
+
+        <!-- Search Bar & Sync Status -->
+        <div class="table-controls">
+            <div class="search-box">
+                <span class="search-icon">🔍</span>
+                <input type="text" id="searchInput" class="search-input" placeholder="Search by hacker handle..." oninput="filterTable()" />
+            </div>
+
+            <div class="status-sync">
+                <span class="sync-dot"></span>
+                <span id="syncStatus">Synced with BaySec League Registry</span>
+            </div>
+        </div>
+
+        <!-- Leaderboard Table -->
+        <div class="table-card">
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 60px;">Rank</th>
+                        <th>Hacker Handle</th>
+                        <th>Tier</th>
+                        <th style="text-align: center;">Attendance</th>
+                        <th style="text-align: center;">Challenges Solved</th>
+                        <th style="text-align: right;">Total Score</th>
+                    </tr>
+                </thead>
+                <tbody id="leaderboardBody">
+                    <!-- Populated by JavaScript -->
+                </tbody>
+            </table>
+            <div id="emptyMessage" class="empty-state" style="display: none;">
+                No hackers found matching your search.
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer>
+        BaySec @ SFBU • Built for the Fall 2026 Cybersecurity League • <a href="https://forms.gle/b5oD4hmCSG41ZcLp7" target="_blank">Submit Weekly Check-In</a>
+    </footer>
+
+    <!-- Script: Data Fetching & Rendering -->
+    <script>
+        /**
+         * -------------------------------------------------------------------
+         * GOOGLE SHEET SYNC CONFIGURATION
+         * -------------------------------------------------------------------
+         * To connect your live Google Sheet:
+         * 1. Open your Google Sheet
+         * 2. Go to File -> Share -> Publish to web
+         * 3. Select your sheet tab, choose 'Comma-separated values (.csv)', click Publish
+         * 4. Paste the published CSV URL below!
+         */
+        const GOOGLE_SHEET_CSV_URL = "";
+
+        // Default / Kickoff fallback data
+        const fallbackMembers = [
+            { handle: "0xViper", attendance: 1, challenges: 1, bonus: 0, points: 150, tier: "Sentinel" },
+            { handle: "CyberKoi", attendance: 1, challenges: 1, bonus: 0, points: 150, tier: "Sentinel" },
+            { handle: "BitPhantom", attendance: 1, challenges: 1, bonus: 0, points: 150, tier: "Sentinel" },
+            { handle: "NetStalker", attendance: 1, challenges: 0, bonus: 0, points: 50, tier: "Initiate" },
+            { handle: "ZeroTrace", attendance: 1, challenges: 0, bonus: 0, points: 50, tier: "Initiate" },
+            { handle: "MatrixRebel", attendance: 1, challenges: 0, bonus: 0, points: 50, tier: "Initiate" },
+            { handle: "NullPointer", attendance: 1, challenges: 0, bonus: 0, points: 50, tier: "Initiate" },
+            { handle: "EchoBreaker", attendance: 1, challenges: 0, bonus: 0, points: 50, tier: "Initiate" },
+            { handle: "ByteHawk", attendance: 1, challenges: 0, bonus: 0, points: 50, tier: "Initiate" },
+            { handle: "RootAdmin", attendance: 1, challenges: 0, bonus: 0, points: 50, tier: "Initiate" }
+        ];
+
+        let currentMembers = [];
+
+        function parseCSV(text) {
+            const lines = text.trim().split('\n');
+            if (lines.length < 2) return [];
+            const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+            
+            const results = [];
+            for (let i = 1; i < lines.length; i++) {
+                const row = lines[i].split(',').map(c => c.trim());
+                if (row.length < 2 || !row[0]) continue;
+                
+                // Expected columns: Handle, Email, Attendance_Count, Challenges_Solved, Bonus_Points, Total_Points, Tier
+                const handle = row[0] || "Hacker";
+                const attendance = parseInt(row[2]) || 0;
+                const challenges = parseInt(row[3]) || 0;
+                const bonus = parseInt(row[4]) || 0;
+                const points = parseInt(row[5]) || (attendance * 50 + challenges * 100 + bonus);
+                const tier = row[6] || (points >= 150 ? "Sentinel" : "Initiate");
+
+                results.push({ handle, attendance, challenges, bonus, points, tier });
+            }
+            return results;
+        }
+
+        async function loadLeaderboardData() {
+            if (GOOGLE_SHEET_CSV_URL && GOOGLE_SHEET_CSV_URL.trim() !== "") {
+                try {
+                    document.getElementById('syncStatus').innerText = "Syncing live with Google Sheets...";
+                    const resp = await fetch(GOOGLE_SHEET_CSV_URL);
+                    if (!resp.ok) throw new Error("Failed to fetch sheet");
+                    const csvText = await resp.text();
+                    const parsed = parseCSV(csvText);
+                    if (parsed.length > 0) {
+                        currentMembers = parsed.sort((a, b) => b.points - a.points);
+                        document.getElementById('syncStatus').innerText = "Live Synced with Google Sheets";
+                        renderAll();
+                        return;
+                    }
+                } catch (err) {
+                    console.warn("Could not load Google Sheet CSV, falling back to local registry data:", err);
+                    document.getElementById('syncStatus').innerText = "Offline Mode (Local Registry Data)";
+                }
+            }
+
+            // Fallback
+            currentMembers = [...fallbackMembers].sort((a, b) => b.points - a.points);
+            renderAll();
+        }
+
+        function renderPodium(members) {
+            const podium = document.getElementById('podiumSection');
+            if (members.length < 3) {
+                podium.innerHTML = "";
+                return;
+            }
+
+            const p1 = members[0];
+            const p2 = members[1];
+            const p3 = members[2];
+
+            podium.innerHTML = `
+                <!-- 2nd Place (Silver) -->
+                <div class="podium-card silver">
+                    <div class="rank-crown">2</div>
+                    <div class="podium-handle">${p2.handle}</div>
+                    <div class="podium-points">${p2.points} <span style="font-size: 0.9rem; color: var(--text-muted);">PTS</span></div>
+                    <span class="podium-badge tier-${p2.tier.toLowerCase()}">${p2.tier}</span>
+                </div>
+
+                <!-- 1st Place (Gold) -->
+                <div class="podium-card gold">
+                    <div class="rank-crown">👑 1</div>
+                    <div class="podium-handle" style="font-size: 1.4rem;">${p1.handle}</div>
+                    <div class="podium-points" style="color: var(--gold); font-size: 1.9rem;">${p1.points} <span style="font-size: 1rem; color: var(--text-muted);">PTS</span></div>
+                    <span class="podium-badge tier-${p1.tier.toLowerCase()}">${p1.tier}</span>
+                </div>
+
+                <!-- 3rd Place (Bronze) -->
+                <div class="podium-card bronze">
+                    <div class="rank-crown">3</div>
+                    <div class="podium-handle">${p3.handle}</div>
+                    <div class="podium-points">${p3.points} <span style="font-size: 0.9rem; color: var(--text-muted);">PTS</span></div>
+                    <span class="podium-badge tier-${p3.tier.toLowerCase()}">${p3.tier}</span>
+                </div>
+            `;
+        }
+
+        function renderTable(members) {
+            const tbody = document.getElementById('leaderboardBody');
+            tbody.innerHTML = "";
+
+            if (members.length === 0) {
+                document.getElementById('emptyMessage').style.display = "block";
+                return;
+            } else {
+                document.getElementById('emptyMessage').style.display = "none";
+            }
+
+            members.forEach((m, idx) => {
+                const rank = idx + 1;
+                let rankClass = "";
+                if (rank === 1) rankClass = "rank-top1";
+                else if (rank === 2) rankClass = "rank-top2";
+                else if (rank === 3) rankClass = "rank-top3";
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="rank-num ${rankClass}">#${rank}</td>
+                    <td>
+                        <div class="handle-cell">
+                            <div class="handle-avatar">🛡️</div>
+                            <span>${m.handle}</span>
+                        </div>
+                    </td>
+                    <td>
+                        <span class="tier-badge tier-${m.tier.toLowerCase()}">${m.tier}</span>
+                    </td>
+                    <td style="text-align: center; font-family: 'Fira Code', monospace;">
+                        ${m.attendance}
+                    </td>
+                    <td style="text-align: center; font-family: 'Fira Code', monospace; color: var(--green);">
+                        ${m.challenges}
+                    </td>
+                    <td style="text-align: right;" class="points-cell">
+                        ${m.points}
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function filterTable() {
+            const query = document.getElementById('searchInput').value.toLowerCase().trim();
+            const filtered = currentMembers.filter(m => m.handle.toLowerCase().includes(query));
+            renderTable(filtered);
+        }
+
+        function renderAll() {
+            renderPodium(currentMembers);
+            renderTable(currentMembers);
+        }
+
+        // Initialize on load
+        loadLeaderboardData();
+    </script>
+</body>
+
+</html>
