@@ -8,7 +8,9 @@
     <link rel="icon" type="image/png" href="assets/baysec-blue.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600;700&family=Outfit:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600;700&family=Outfit:wght@300;400;600;700;800&display=swap"
+        rel="stylesheet">
     <style>
         :root {
             --bg: #0b0f19;
@@ -42,7 +44,7 @@
             min-height: 100vh;
             display: flex;
             flex-direction: column;
-            background-image: 
+            background-image:
                 radial-gradient(circle at 15% 15%, rgba(0, 240, 255, 0.06) 0%, transparent 45%),
                 radial-gradient(circle at 85% 85%, rgba(239, 68, 68, 0.05) 0%, transparent 45%);
             background-attachment: fixed;
@@ -101,7 +103,8 @@
             transition: all 0.2s ease;
         }
 
-        .nav-link:hover, .nav-link.active {
+        .nav-link:hover,
+        .nav-link.active {
             color: var(--cyan);
             background: rgba(0, 240, 255, 0.08);
         }
@@ -397,9 +400,17 @@
             width: 50px;
         }
 
-        .rank-top1 { color: var(--gold); }
-        .rank-top2 { color: var(--silver); }
-        .rank-top3 { color: var(--bronze); }
+        .rank-top1 {
+            color: var(--gold);
+        }
+
+        .rank-top2 {
+            color: var(--silver);
+        }
+
+        .rank-top3 {
+            color: var(--bronze);
+        }
 
         .handle-cell {
             font-family: 'Fira Code', monospace;
@@ -482,12 +493,15 @@
             .podium {
                 grid-template-columns: 1fr;
             }
+
             .podium-card.gold {
                 order: -1;
             }
+
             .navbar {
                 padding: 12px 18px;
             }
+
             .nav-links {
                 display: none;
             }
@@ -523,7 +537,8 @@
             <span class="badge">Fall 2026 Competitive Season</span>
             <h1>Cybersecurity League Standings</h1>
             <p>
-                Earn points each week through meeting attendance, solving practical hands-on labs, and ranking in our final BaySec CTF. Top performers earn custom merch and tech prizes at the end of the term!
+                Earn points each week through meeting attendance, solving practical hands-on labs, and ranking in our
+                final BaySec CTF. Top performers earn custom merch and tech prizes at the end of the term!
             </p>
 
             <!-- Rules Summary Pills -->
@@ -552,7 +567,8 @@
         <div class="table-controls">
             <div class="search-box">
                 <span class="search-icon">🔍</span>
-                <input type="text" id="searchInput" class="search-input" placeholder="Search by hacker handle..." oninput="filterTable()" />
+                <input type="text" id="searchInput" class="search-input" placeholder="Search by hacker handle..."
+                    oninput="filterTable()" />
             </div>
 
             <div class="status-sync">
@@ -587,7 +603,8 @@
 
     <!-- Footer -->
     <footer>
-        BaySec @ SFBU • Built for the Fall 2026 Cybersecurity League • <a href="https://forms.gle/b5oD4hmCSG41ZcLp7" target="_blank">Submit Weekly Check-In</a>
+        BaySec @ SFBU • Built for the Fall 2026 Cybersecurity League • <a href="https://forms.gle/b5oD4hmCSG41ZcLp7"
+            target="_blank">Submit Weekly Check-In</a>
     </footer>
 
     <!-- Script: Data Fetching & Rendering -->
@@ -602,7 +619,7 @@
          * 3. Select your sheet tab, choose 'Comma-separated values (.csv)', click Publish
          * 4. Paste the published CSV URL below!
          */
-        const GOOGLE_SHEET_CSV_URL = "";
+        const GOOGLE_SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTyNmzYZTmVo4ZfgpKu4VyfLDUU9UkS3AgCIgdt8MPkrdb-EOOhN0UkQJb9DB3qkGaJfK_XqoTBSYr0/pub?gid=587230963&single=true&output=csv";
 
         // Default / Kickoff fallback data
         const fallbackMembers = [
@@ -624,12 +641,12 @@
             const lines = text.trim().split('\n');
             if (lines.length < 2) return [];
             const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
-            
+
             const results = [];
             for (let i = 1; i < lines.length; i++) {
                 const row = lines[i].split(',').map(c => c.trim());
                 if (row.length < 2 || !row[0]) continue;
-                
+
                 // Expected columns: Handle, Email, Attendance_Count, Challenges_Solved, Bonus_Points, Total_Points, Tier
                 const handle = row[0] || "Hacker";
                 const attendance = parseInt(row[2]) || 0;
