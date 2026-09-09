@@ -1,0 +1,890 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>BaySec @ SFBU — Week 5: Linux CLI & Wireshark Traffic Analysis</title>
+    <link rel="icon" type="image/png" href="../assets/baysec-blue.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600;700&family=Outfit:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0b0f19;
+            --surface: #111827;
+            --surface-elevated: #162032;
+            --border: #1f293d;
+            --cyan: #00f0ff;
+            --cyan-glow: rgba(0, 240, 255, 0.25);
+            --blue: #38bdf8;
+            --red: #ef4444;
+            --red-glow: rgba(239, 68, 68, 0.25);
+            --purple: #a855f7;
+            --green: #4ade80;
+            --amber: #f59e0b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text-main);
+            font-family: 'Outfit', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(0, 240, 255, 0.05) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(239, 68, 68, 0.04) 0%, transparent 40%);
+        }
+
+        .top-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 24px;
+            background: rgba(17, 24, 39, 0.85);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .brand-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .brand-header img {
+            width: 32px;
+            height: 32px;
+            filter: drop-shadow(0 0 8px var(--cyan-glow));
+        }
+
+        .brand-header span {
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            font-size: 1.05rem;
+            color: var(--text-main);
+        }
+
+        .controls-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .nav-btn {
+            background: var(--surface-elevated);
+            color: var(--text-main);
+            border: 1px solid var(--border);
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-family: inherit;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            text-decoration: none;
+        }
+
+        .nav-btn:hover {
+            border-color: var(--cyan);
+            color: var(--cyan);
+            box-shadow: 0 0 10px var(--cyan-glow);
+        }
+
+        .nav-btn.primary {
+            background: #0284c7;
+            border-color: #0284c7;
+            color: #fff;
+        }
+
+        .nav-btn.primary:hover {
+            background: #0369a1;
+            box-shadow: 0 0 12px rgba(2, 132, 199, 0.4);
+        }
+
+        .slide-counter {
+            font-family: 'Fira Code', monospace;
+            font-size: 0.9rem;
+            color: var(--cyan);
+            padding: 0 10px;
+        }
+
+        .stage-container {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+        }
+
+        .slide-deck {
+            width: 100%;
+            max-width: 1200px;
+            aspect-ratio: 16 / 9;
+            position: relative;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6), 0 0 30px rgba(0, 240, 255, 0.08);
+            overflow: hidden;
+            display: flex;
+        }
+
+        .slide {
+            position: absolute;
+            inset: 0;
+            padding: 44px 56px;
+            display: none;
+            flex-direction: column;
+            justify-content: space-between;
+            animation: slideFadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .slide.active {
+            display: flex;
+        }
+
+        @keyframes slideFadeIn {
+            from { opacity: 0; transform: scale(0.985); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .slide-tag {
+            display: inline-block;
+            align-self: flex-start;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--cyan);
+            background: rgba(0, 240, 255, 0.1);
+            border: 1px solid rgba(0, 240, 255, 0.3);
+            padding: 4px 10px;
+            border-radius: 4px;
+            margin-bottom: 12px;
+        }
+
+        .slide-tag.red {
+            color: var(--red);
+            background: rgba(239, 68, 68, 0.1);
+            border-color: rgba(239, 68, 68, 0.3);
+        }
+
+        .slide-header {
+            margin-bottom: 24px;
+        }
+
+        .slide-title {
+            font-size: 2.2rem;
+            font-weight: 800;
+            color: var(--text-main);
+            letter-spacing: -0.5px;
+            line-height: 1.2;
+        }
+
+        .slide-subtitle {
+            font-size: 1.05rem;
+            color: var(--blue);
+            margin-top: 6px;
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 28px;
+            flex: 1;
+        }
+
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 22px;
+            flex: 1;
+        }
+
+        .card {
+            background: var(--surface-elevated);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.2s ease, border-color 0.2s ease;
+        }
+
+        .card:hover { transform: translateY(-2px); }
+        .card.cyan-accent { border-top: 3px solid var(--cyan); }
+        .card.red-accent { border-top: 3px solid var(--red); }
+        .card.amber-accent { border-top: 3px solid var(--amber); }
+        .card.green-accent { border-top: 3px solid var(--green); }
+
+        .card-header {
+            font-family: 'Fira Code', monospace;
+            font-size: 0.85rem;
+            font-weight: 700;
+            margin-bottom: 6px;
+            letter-spacing: 0.5px;
+        }
+
+        .card-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 12px;
+        }
+
+        .card-body {
+            font-size: 0.92rem;
+            line-height: 1.55;
+            color: var(--text-muted);
+            flex: 1;
+        }
+
+        .callout-banner {
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid var(--blue);
+            border-radius: 6px;
+            padding: 12px 20px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            text-align: center;
+            color: var(--text-main);
+            margin-top: 18px;
+        }
+
+        .code-box {
+            background: #090d16;
+            border: 1px solid #1e293b;
+            padding: 12px;
+            border-radius: 6px;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.85rem;
+            color: var(--green);
+            overflow-x: auto;
+            margin: 8px 0;
+        }
+
+        .slide-title-hero {
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            position: relative;
+        }
+
+        .dual-logos {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 28px;
+            margin: 20px 0;
+        }
+
+        .dual-logos img {
+            width: 130px;
+            height: auto;
+            filter: drop-shadow(0 0 16px rgba(0, 240, 255, 0.35));
+        }
+
+        .slide-qr-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            background: var(--surface-elevated);
+            border: 1px solid var(--border);
+            padding: 12px;
+            border-radius: 8px;
+        }
+
+        .slide-qr-wrapper img {
+            width: 100px;
+            height: 100px;
+            border-radius: 4px;
+            background: #fff;
+            padding: 4px;
+        }
+
+        .slide-qr-wrapper span {
+            font-size: 0.8rem;
+            font-weight: 700;
+        }
+
+        .slide-bottom-corners {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            position: absolute;
+            bottom: 30px;
+            left: 0;
+            padding: 0 44px;
+        }
+
+        .terminal-window {
+            background: #0d121f;
+            border: 1px solid var(--red);
+            border-radius: 8px;
+            padding: 24px;
+            font-family: 'Fira Code', monospace;
+            box-shadow: 0 0 25px rgba(239, 68, 68, 0.15);
+        }
+
+        .timer-widget {
+            background: #090d16;
+            border: 2px solid var(--red);
+            border-radius: 8px;
+            padding: 16px;
+            text-align: center;
+            box-shadow: 0 0 20px var(--red-glow);
+        }
+
+        .timer-display {
+            font-family: 'Fira Code', monospace;
+            font-size: 2.4rem;
+            font-weight: 700;
+            color: var(--red);
+            letter-spacing: 2px;
+            margin: 6px 0;
+        }
+
+        .timer-controls {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            margin-top: 10px;
+        }
+
+        .timer-btn {
+            background: #1e293b;
+            border: 1px solid #334155;
+            color: #fff;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.75rem;
+            padding: 4px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .timer-btn:hover {
+            background: var(--red);
+            border-color: var(--red);
+        }
+
+        .notes-panel {
+            background: var(--surface);
+            border-top: 1px solid var(--border);
+            padding: 16px 28px;
+            display: none;
+        }
+
+        .notes-panel.visible { display: block; }
+
+        .notes-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.8rem;
+            color: var(--cyan);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .notes-content {
+            font-size: 0.95rem;
+            line-height: 1.6;
+            color: #e2e8f0;
+            font-style: italic;
+            background: rgba(0, 0, 0, 0.25);
+            padding: 12px 18px;
+            border-left: 3px solid var(--cyan);
+            border-radius: 0 6px 6px 0;
+        }
+
+        @media (max-width: 900px) {
+            .stage-container { padding: 10px; }
+            .slide-deck { aspect-ratio: auto; min-height: 600px; }
+            .grid-2, .grid-3 { grid-template-columns: 1fr; }
+            .slide-bottom-corners { position: static; margin-top: 20px; padding: 0; }
+        }
+    </style>
+</head>
+
+<body>
+
+    <header class="top-bar">
+        <div class="brand-header">
+            <img src="../assets/baysec-blue.png" alt="BaySec Crest" />
+            <span>BaySec @ SFBU • Week 5</span>
+        </div>
+
+        <div class="controls-group">
+            <button class="nav-btn" onclick="prevSlide()" title="Previous Slide (Left Arrow)">◀ Prev</button>
+            <span id="slideCounter" class="slide-counter">1 / 8</span>
+            <button class="nav-btn" onclick="nextSlide()" title="Next Slide (Right Arrow / Space)">Next ▶</button>
+            <button class="nav-btn" onclick="toggleNotes()" id="notesBtn" title="Toggle Presenter Notes (N)">🎙️ Notes</button>
+            <button class="nav-btn" onclick="toggleFullscreen()" title="Fullscreen Mode (F)">⛶ Fullscreen</button>
+            <a href="BaySec_Week5_Foundations.pptx" download class="nav-btn primary" title="Download official PowerPoint file">⬇ Download .PPTX</a>
+        </div>
+    </header>
+
+    <main class="stage-container" id="stageContainer">
+        <div class="slide-deck">
+
+            <!-- SLIDE 1 -->
+            <section class="slide active" data-slide="1">
+                <div class="slide-title-hero">
+                    <span class="slide-tag">WEEK 5 | NETWORKING & TRAFFIC ANALYSIS</span>
+                    <h1 class="slide-title" style="font-size: 2.8rem; margin-top: 8px;">Foundations: Linux CLI & Wireshark</h1>
+                    <p class="slide-subtitle" style="font-size: 1.2rem;">Packet Sniffing, Handshakes & Protocol Dissection</p>
+
+                    <div class="dual-logos">
+                        <img src="../assets/baysec-blue.png" alt="BaySec Blue Crest" />
+                        <img src="../assets/baysec-red.png" alt="BaySec Red Crest" />
+                    </div>
+
+                    <p style="color: var(--text-muted); font-size: 1.05rem; max-width: 650px;">
+                        Welcome back! Please scan the QR code to check in for Week 5 (+50 League Points) while we get underway.
+                    </p>
+
+                    <div class="slide-bottom-corners">
+                        <a href="https://forms.gle/b5oD4hmCSG41ZcLp7" target="_blank" style="text-decoration: none; color: inherit;">
+                            <div class="slide-qr-wrapper">
+                                <img src="gen_assets/qr_attendance.png" alt="Attendance QR Code" />
+                                <span style="color: var(--cyan);">Scan for Attendance</span>
+                            </div>
+                        </a>
+                        <a href="https://chat.whatsapp.com/G37EdhFrJRK1uS1hkXLUwL" target="_blank" style="text-decoration: none; color: inherit;">
+                            <div class="slide-qr-wrapper">
+                                <img src="../assets/qr.png" alt="WhatsApp QR Code" />
+                                <span style="color: var(--green);">Join WhatsApp Community</span>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SLIDE 2 -->
+            <section class="slide" data-slide="2">
+                <div class="slide-header">
+                    <span class="slide-tag">SEASON PROGRESS</span>
+                    <h2 class="slide-title">Week 4 Recap & League Standings</h2>
+                    <p class="slide-subtitle">Solvers crowned, points awarded, and our live leaderboard active.</p>
+                </div>
+
+                <div class="grid-2">
+                    <div class="card cyan-accent">
+                        <div class="card-header" style="color: var(--cyan);">🚩 CHALLENGE 0x01 DEBRIEF</div>
+                        <p class="card-body">
+                            In our kickoff lab, we uncovered an authorization token exposed inside HTML comments on the client gateway:
+                        </p>
+                        <div class="code-box">echo "c2ZidXt3M2xjMG0z..." | base64 -d</div>
+                        <ul style="margin-top: 10px; font-size: 0.9rem; line-height: 1.8; color: var(--text-muted);">
+                            <li>• Solvers earned <strong>+100 Challenge Points</strong></li>
+                            <li>• Total Kickoff potential: <strong>150 pts</strong> (Attendance + Challenge)</li>
+                            <li>• Core Lesson: The browser is untrusted territory</li>
+                        </ul>
+                    </div>
+
+                    <div class="card amber-accent">
+                        <div class="card-header" style="color: var(--amber);">🏆 LIVE LEAGUE STANDINGS</div>
+                        <p class="card-body" style="margin-bottom: 12px;">
+                            Our official BaySec Leaderboard is now live and tracking semester progress!
+                        </p>
+                        <div style="font-family: 'Fira Code', monospace; font-size: 0.85rem; line-height: 1.9; color: var(--text-main);">
+                            <div>🌱 <strong>Initiate</strong>: 0 – 149 pts</div>
+                            <div>⚡ <strong>Operator</strong>: 150 – 299 pts (Current Leaders!)</div>
+                            <div>🛡️ <strong>Sentinel</strong>: 300 – 599 pts</div>
+                            <div>⚔️ <strong>Breaker</strong>: 600 – 999 pts</div>
+                            <div>👑 <strong>Grandmaster</strong>: 1,000+ pts</div>
+                        </div>
+                        <div style="margin-top: 14px; font-size: 0.85rem;">
+                            <a href="../leaderboard.html" target="_blank" style="color: var(--cyan); text-decoration: underline;">View Live Leaderboard ➔</a>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SLIDE 3 -->
+            <section class="slide" data-slide="3">
+                <div class="slide-header">
+                    <span class="slide-tag">TERMINAL MASTERY</span>
+                    <h2 class="slide-title">Linux Command-Line Survival Kit</h2>
+                    <p class="slide-subtitle">Essential commands for rapid triage, log parsing, and networking.</p>
+                </div>
+
+                <div class="grid-3">
+                    <div class="card cyan-accent">
+                        <div class="card-header" style="color: var(--cyan);">FILESYSTEM & PERMS</div>
+                        <div class="card-body">
+                            <div style="font-family: 'Fira Code', monospace; font-size: 0.85rem; color: #fff; margin-bottom: 4px;">$ ls -la</div>
+                            <p style="font-size: 0.8rem; margin-bottom: 12px;">View permissions & hidden dotfiles</p>
+
+                            <div style="font-family: 'Fira Code', monospace; font-size: 0.85rem; color: #fff; margin-bottom: 4px;">$ chmod +x script.sh</div>
+                            <p style="font-size: 0.8rem; margin-bottom: 12px;">Grant execute rights on binaries</p>
+
+                            <div style="font-family: 'Fira Code', monospace; font-size: 0.85rem; color: #fff; margin-bottom: 4px;">$ cat / head / tail</div>
+                            <p style="font-size: 0.8rem;">Read raw file and log streams</p>
+                        </div>
+                    </div>
+
+                    <div class="card green-accent">
+                        <div class="card-header" style="color: var(--green);">PIPES & WRANGLING</div>
+                        <div class="card-body">
+                            <div style="font-family: 'Fira Code', monospace; font-size: 0.85rem; color: #fff; margin-bottom: 4px;">$ grep -rn "flag" .</div>
+                            <p style="font-size: 0.8rem; margin-bottom: 12px;">Search recursively for patterns</p>
+
+                            <div style="font-family: 'Fira Code', monospace; font-size: 0.85rem; color: #fff; margin-bottom: 4px;">$ awk '{print $1}'</div>
+                            <p style="font-size: 0.8rem; margin-bottom: 12px;">Isolate specific column output</p>
+
+                            <div style="font-family: 'Fira Code', monospace; font-size: 0.85rem; color: #fff; margin-bottom: 4px;">$ sort | uniq -c</div>
+                            <p style="font-size: 0.8rem;">Count unique instances</p>
+                        </div>
+                    </div>
+
+                    <div class="card amber-accent">
+                        <div class="card-header" style="color: var(--amber);">NETWORK & SOCKETS</div>
+                        <div class="card-body">
+                            <div style="font-family: 'Fira Code', monospace; font-size: 0.85rem; color: #fff; margin-bottom: 4px;">$ ip a / ifconfig</div>
+                            <p style="font-size: 0.8rem; margin-bottom: 12px;">Inspect interface IPs & MACs</p>
+
+                            <div style="font-family: 'Fira Code', monospace; font-size: 0.85rem; color: #fff; margin-bottom: 4px;">$ curl -v http://...</div>
+                            <p style="font-size: 0.8rem; margin-bottom: 12px;">Transmit raw HTTP & read headers</p>
+
+                            <div style="font-family: 'Fira Code', monospace; font-size: 0.85rem; color: #fff; margin-bottom: 4px;">$ ss -tulpn</div>
+                            <p style="font-size: 0.8rem;">List listening TCP/UDP sockets</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="callout-banner">
+                    ⚡ The Linux terminal is your primary offensive and defensive weapon for forensic triage and exploit delivery.
+                </div>
+            </section>
+
+            <!-- SLIDE 4 -->
+            <section class="slide" data-slide="4">
+                <div class="slide-header">
+                    <span class="slide-tag">NETWORK ARCHITECTURE</span>
+                    <h2 class="slide-title">Packets, Ports & Protocols</h2>
+                    <p class="slide-subtitle">Understanding layer encapsulation and the mechanics of reliable connections.</p>
+                </div>
+
+                <div class="grid-2">
+                    <div class="card cyan-accent">
+                        <div class="card-header" style="color: var(--cyan);">🌐 4-LAYER PACKET ANATOMY</div>
+                        <ul style="list-style: none; font-size: 0.9rem; line-height: 1.8; color: var(--text-main);">
+                            <li><strong>Layer 7 (Application)</strong>: HTTP, DNS, SSH — The user data payload.</li>
+                            <li style="margin-top: 8px;"><strong>Layer 4 (Transport)</strong>: TCP/UDP — Ports (80, 443, 8080), sequence numbers, reliability.</li>
+                            <li style="margin-top: 8px;"><strong>Layer 3 (Network)</strong>: IPv4/IPv6 — Logical routing from Source IP to Destination IP.</li>
+                            <li style="margin-top: 8px;"><strong>Layer 2 (Data Link)</strong>: Ethernet — Hardware MAC addresses for hop-by-hop local framing.</li>
+                        </ul>
+                    </div>
+
+                    <div class="card red-accent">
+                        <div class="card-header" style="color: var(--red);">🤝 THE TCP 3-WAY HANDSHAKE</div>
+                        <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 12px;">
+                            Before data flies, TCP establishes state between hosts:
+                        </p>
+                        <div style="font-family: 'Fira Code', monospace; font-size: 0.85rem; line-height: 1.9;">
+                            <div>1. <strong>SYN</strong>: Client ➔ Server: <em>Let's talk (Seq=0)</em></div>
+                            <div>2. <strong>SYN-ACK</strong>: Server ➔ Client: <em>Ready (Seq=0, Ack=1)</em></div>
+                            <div>3. <strong>ACK</strong>: Client ➔ Server: <em>Connection established</em></div>
+                            <div>4. <strong>PAYLOAD</strong>: Request flows (GET / POST)</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="callout-banner">
+                    💡 Every packet you capture is nested: Ethernet frames carry IP packets, which carry TCP segments, which carry HTTP.
+                </div>
+            </section>
+
+            <!-- SLIDE 5 -->
+            <section class="slide" data-slide="5">
+                <div class="slide-header">
+                    <span class="slide-tag">DEFENSIVE TRIAGE</span>
+                    <h2 class="slide-title">Wireshark Packet Analysis Manual</h2>
+                    <p class="slide-subtitle">How SOC analysts cut through noise to extract credentials and isolate threats.</p>
+                </div>
+
+                <div class="grid-3">
+                    <div class="card green-accent">
+                        <div class="card-header" style="color: var(--green);">DISPLAY FILTERS</div>
+                        <div class="card-body">
+                            <p style="font-size: 0.85rem; margin-bottom: 8px;">Filter millions of frames:</p>
+                            <div class="code-box" style="font-size: 0.78rem;">http<br>tcp.port == 8080<br>ip.src == 192.168.1.42<br>dns || arp</div>
+                        </div>
+                    </div>
+
+                    <div class="card cyan-accent">
+                        <div class="card-header" style="color: var(--cyan);">FOLLOW TCP STREAM</div>
+                        <div class="card-body">
+                            <p style="font-size: 0.85rem; margin-bottom: 8px;">Reassemble conversations:</p>
+                            <p style="font-size: 0.85rem; color: #fff;">Right-Click Packet ➔ <strong>Follow ➔ TCP Stream</strong>.</p>
+                            <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 8px;">Stitches fragmented TCP streams back into readable ASCII text!</p>
+                        </div>
+                    </div>
+
+                    <div class="card red-accent">
+                        <div class="card-header" style="color: var(--red);">HTTP VS HTTPS</div>
+                        <div class="card-body">
+                            <p style="font-size: 0.85rem; margin-bottom: 8px;">The plaintext risk:</p>
+                            <p style="font-size: 0.85rem; color: #fca5a5;">HTTP (80/8080) transmits raw tokens and passwords in plaintext.</p>
+                            <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 8px;">HTTPS (443) encrypts payload via TLS.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="callout-banner">
+                    ⚠️ On shared Wi-Fi or compromised LANs, unencrypted HTTP leaks passwords and session cookies immediately to packet sniffers.
+                </div>
+            </section>
+
+            <!-- SLIDE 6 -->
+            <section class="slide" data-slide="6">
+                <div class="slide-header">
+                    <span class="slide-tag red">LIVE HANDS-ON LAB</span>
+                    <h2 class="slide-title">Challenge 0x02: The Intercepted Uplink</h2>
+                    <p class="slide-subtitle">Inspect the intercepted packet capture and extract the operator authorization flag.</p>
+                </div>
+
+                <div class="grid-2">
+                    <div class="terminal-window">
+                        <div style="color: var(--red); font-weight: bold; margin-bottom: 6px;">[!] INCIDENT SCENARIO:</div>
+                        <p style="color: #cbd5e1; font-size: 0.9rem; margin-bottom: 14px;">
+                            A network tap on our internal laboratory subnet intercepted an unencrypted communication stream. An operator transmitted an authentication beacon.
+                        </p>
+
+                        <div style="color: var(--cyan); font-weight: bold; margin-bottom: 6px;">[*] OBJECTIVE:</div>
+                        <p style="color: #cbd5e1; font-size: 0.9rem; margin-bottom: 14px;">
+                            Filter protocol traffic, inspect the payload, and retrieve the authorization flag.
+                        </p>
+
+                        <div style="color: var(--green); font-weight: bold; margin-bottom: 6px;">[#] FLAG FORMAT:</div>
+                        <div class="code-box" style="font-size: 1.1rem; font-weight: bold;">sfbu{...}</div>
+
+                        <div style="margin-top: 12px; font-size: 0.82rem; color: var(--blue);">
+                            TARGET: <a href="index.html" target="_blank" style="color: var(--cyan); text-decoration: underline;">baysec/week5</a> • Includes Web CyberShark & .PCAP download!
+                        </div>
+                    </div>
+
+                    <div style="display: flex; flex-direction: column; gap: 16px; justify-content: center; align-items: center;">
+                        <div class="timer-widget" style="width: 100%; max-width: 320px;">
+                            <div style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px;">Time Remaining</div>
+                            <div class="timer-display" id="challengeTimer">05:00</div>
+                            <div class="timer-controls">
+                                <button class="timer-btn" onclick="startTimer()">Start</button>
+                                <button class="timer-btn" onclick="pauseTimer()">Pause</button>
+                                <button class="timer-btn" onclick="resetTimer()">Reset</button>
+                            </div>
+                        </div>
+
+                        <a href="index.html" target="_blank" style="text-decoration: none; color: inherit; width: 100%; max-width: 320px;">
+                            <div class="slide-qr-wrapper">
+                                <img src="gen_assets/qr_challenge.png" alt="Challenge 0x02 QR" style="width: 130px; height: 130px;" />
+                                <span style="color: var(--cyan);">Scan to Launch Challenge</span>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SLIDE 7 -->
+            <section class="slide" data-slide="7">
+                <div class="slide-header">
+                    <span class="slide-tag">LAB DEBRIEF</span>
+                    <h2 class="slide-title">0x02 Solution: Dissecting the Uplink</h2>
+                    <p class="slide-subtitle">Analyzing how unencrypted application telemetry reveals authorization secrets.</p>
+                </div>
+
+                <div class="grid-2">
+                    <div class="card cyan-accent">
+                        <div class="card-header" style="color: var(--cyan);">STEP 1: FILTER & IDENTIFY</div>
+                        <ul style="list-style: none; font-size: 0.95rem; line-height: 1.6;">
+                            <li>Apply display filter: <code>http</code> or <code>port 8080</code></li>
+                            <li style="margin-top: 10px;">Notice Packet #15: A <code>POST /api/v2/telemetry/uplink</code> request:</li>
+                        </ul>
+                        <div class="code-box" style="margin-top: 12px; font-size: 0.8rem;">
+POST /api/v2/telemetry/uplink HTTP/1.1<br>
+Host: gateway.baysec.sfbu:8080<br>
+Authorization: Basic c2ZidV9hZG1pbj...==
+                        </div>
+                        <div style="font-size: 0.85rem; color: var(--text-muted); font-style: italic; margin-top: 8px;">
+                            Unlike encrypted TLS on 443, port 8080 was running unencrypted plaintext HTTP!
+                        </div>
+                    </div>
+
+                    <div class="card green-accent">
+                        <div class="card-header" style="color: var(--green);">STEP 2: INSPECT PAYLOAD</div>
+                        <p style="font-size: 0.85rem; color: var(--amber); font-weight: bold; margin-bottom: 4px;">HTML FORM URL ENCODED PAYLOAD:</p>
+                        <div class="code-box" style="color: #fff; font-size: 0.8rem;">
+station_id=SFBU-LAB-01&<br>
+operator_callsign=0xGhost&<br>
+auth_token=sfbu{w1r3sh4rk_p4ck3t_sn1ff3r_2026}
+                        </div>
+
+                        <div style="margin-top: 14px; padding: 10px; background: rgba(74, 222, 128, 0.1); border: 1px solid var(--green); border-radius: 6px;">
+                            <div style="font-size: 0.75rem; color: var(--green); font-weight: bold;">FLAG RECOVERED:</div>
+                            <div style="font-family: 'Fira Code', monospace; font-size: 1.05rem; font-weight: bold; color: #fff;">sfbu{w1r3sh4rk_p4ck3t_sn1ff3r_2026}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="callout-banner" style="border-color: var(--red); color: #fca5a5;">
+                    ⚠️ KEY TAKEAWAY: Plaintext traffic over standard or non-standard ports (80, 8080) leaks credentials to any network tap.
+                </div>
+            </section>
+
+            <!-- SLIDE 8 -->
+            <section class="slide" data-slide="8">
+                <div class="slide-header">
+                    <span class="slide-tag">LOOKING AHEAD</span>
+                    <h2 class="slide-title">Next Steps & Looking Ahead</h2>
+                    <p class="slide-subtitle">Next week we kick off active reconnaissance and open-source intelligence.</p>
+                </div>
+
+                <div class="grid-2">
+                    <div class="card cyan-accent">
+                        <div class="card-header" style="color: var(--cyan);">🚀 NEXT WEEK: RECON & OSINT</div>
+                        <div style="font-size: 1.2rem; font-weight: 700; color: #fff; margin-bottom: 12px;">
+                            Active Subnet Mapping with Nmap & Google Dorking
+                        </div>
+
+                        <div class="card-header" style="color: var(--blue); margin-top: 8px;">📅 LEADERBOARD UPDATE</div>
+                        <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 12px;">
+                            Points from today's attendance (+50) and Challenge 0x02 (+100) are now being calculated!
+                        </p>
+
+                        <div class="card-header" style="color: var(--green); margin-top: 8px;">📫 CONTACTS</div>
+                        <div style="font-size: 0.9rem; line-height: 1.6;">
+                            <div>Khoi Duong (President) — <code style="color: var(--cyan);">mduong@student.sfbu.edu</code></div>
+                            <div>Joed Prudente (Advisor) — <code style="color: var(--cyan);">joed.prudente@sfbu.edu</code></div>
+                        </div>
+                    </div>
+
+                    <div class="card green-accent" style="align-items: center; justify-content: center; text-align: center;">
+                        <div class="card-header" style="color: var(--green); margin-bottom: 12px;">WHATSAPP COMMUNITY</div>
+                        <img src="../assets/qr.png" alt="WhatsApp QR" style="width: 150px; height: 150px; background: #fff; padding: 6px; border-radius: 8px; box-shadow: 0 0 20px rgba(74, 222, 128, 0.2);" />
+                        <h3 style="font-size: 2rem; margin: 16px 0 6px;">QUESTIONS?</h3>
+                        <p style="color: var(--text-muted); font-size: 0.95rem; max-width: 320px;">
+                            The floor is now open for Q&A, Wireshark troubleshooting, or discussing CTF strategies.
+                        </p>
+                    </div>
+                </div>
+            </section>
+
+        </div>
+    </main>
+
+    <aside class="notes-panel" id="notesPanel">
+        <div class="notes-header">
+            <span>🎙️ Speaker Notes (Presenter View)</span>
+            <span id="notesSlideNumber">Slide 1 of 8</span>
+        </div>
+        <p class="notes-content" id="notesContent">
+            Loading speaker notes...
+        </p>
+    </aside>
+
+    <script>
+        const speakerNotes = {
+            1: "Welcome to Week 5 of BaySec! Make sure to scan the QR code for today's attendance so your points get added to the league leaderboard. Today, we move from the kickoff into core foundations: mastering the Linux command line and learning how to inspect live packets using Wireshark.",
+            2: "Awesome job to everyone who solved Challenge 0x01 last week! You successfully broke into the Operator tier with 150 points. Our official live leaderboard is now up on the website. Today's Challenge 0x02 offers another 100 points, so there is plenty of room to climb the standings.",
+            3: "Security pros spend 90% of their time on the Linux command line. Piping commands together—like taking output from curl, passing it through grep, and filtering with awk—lets you dissect gigabytes of server logs or packet captures in seconds.",
+            4: "Packets are like Russian nesting dolls. An Ethernet frame carries an IP packet, which carries a TCP segment, which carries HTTP data. Every reliable connection on the internet starts with that 3-way handshake: SYN, SYN-ACK, ACK. When we look at Wireshark, we can see every step.",
+            5: "The most powerful feature for beginners in Wireshark is 'Follow TCP Stream.' Instead of looking at individual TCP fragments, Wireshark stitches the entire HTTP conversation back together into plain text. Let's put this into practice right now.",
+            6: "Time for Challenge 0x02! Pull out your laptops or phones and scan the QR code. You can analyze the traffic directly in your browser using our CyberShark tool, or download the .pcap to open it in Wireshark. Find the operator's authentication token and submit the flag. 5 minutes on the clock—go!",
+            7: "Great work everyone! As you saw, finding the flag was as simple as filtering for 'http' or 'port 8080' and opening Packet 15. Because the server did not enforce HTTPS, the auth token was transmitted in plain ASCII text. That is why TLS encryption is mandatory in production.",
+            8: "Next week we dive into Reconnaissance: scanning subnets with Nmap and hunting open-source intelligence with Google Dorks. Make sure you're in WhatsApp for lab files. Thank you everyone, let's open the floor for questions!"
+        };
+
+        let currentSlide = 1;
+        const totalSlides = 8;
+
+        function updateSlideUI() {
+            document.querySelectorAll('.slide').forEach(slide => slide.classList.remove('active'));
+            const activeSlide = document.querySelector(`.slide[data-slide="${currentSlide}"]`);
+            if (activeSlide) activeSlide.classList.add('active');
+
+            document.getElementById('slideCounter').innerText = `${currentSlide} / ${totalSlides}`;
+            document.getElementById('notesSlideNumber').innerText = `Slide ${currentSlide} of ${totalSlides}`;
+            document.getElementById('notesContent').innerText = speakerNotes[currentSlide] || "No notes.";
+        }
+
+        function nextSlide() {
+            if (currentSlide < totalSlides) { currentSlide++; updateSlideUI(); }
+        }
+        function prevSlide() {
+            if (currentSlide > 1) { currentSlide--; updateSlideUI(); }
+        }
+        function toggleNotes() {
+            const panel = document.getElementById('notesPanel');
+            panel.classList.toggle('visible');
+            const btn = document.getElementById('notesBtn');
+            btn.style.color = panel.classList.contains('visible') ? 'var(--cyan)' : '';
+            btn.style.borderColor = panel.classList.contains('visible') ? 'var(--cyan)' : '';
+        }
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => alert(err.message));
+            } else if (document.exitFullscreen) {
+                document.exitFullscreen();
+            }
+        }
+
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') nextSlide();
+            else if (e.key === 'ArrowLeft' || e.key === 'PageUp') prevSlide();
+            else if (e.key.toLowerCase() === 'n') toggleNotes();
+            else if (e.key.toLowerCase() === 'f') toggleFullscreen();
+        });
+
+        let timerSeconds = 300;
+        let timerInterval = null;
+
+        function renderTimer() {
+            const mins = Math.floor(timerSeconds / 60).toString().padStart(2, '0');
+            const secs = (timerSeconds % 60).toString().padStart(2, '0');
+            document.getElementById('challengeTimer').innerText = `${mins}:${secs}`;
+        }
+        function startTimer() {
+            if (timerInterval) return;
+            timerInterval = setInterval(() => {
+                if (timerSeconds > 0) {
+                    timerSeconds--;
+                    renderTimer();
+                } else {
+                    clearInterval(timerInterval);
+                    timerInterval = null;
+                    alert("Time's up for Challenge 0x02!");
+                }
+            }, 1000);
+        }
+        function pauseTimer() { clearInterval(timerInterval); timerInterval = null; }
+        function resetTimer() { pauseTimer(); timerSeconds = 300; renderTimer(); }
+
+        updateSlideUI();
+    </script>
+</body>
+
+</html>

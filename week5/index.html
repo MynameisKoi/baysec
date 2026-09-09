@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>BaySec @ SFBU — Challenge 0x02: Intercepted Uplink</title>
+    <link rel="icon" type="image/png" href="../assets/baysec-blue.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600;700&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0b0f19;
+            --surface: #111827;
+            --surface-elevated: #162032;
+            --border: #1f293d;
+            --cyan: #00f0ff;
+            --cyan-glow: rgba(0, 240, 255, 0.25);
+            --blue: #38bdf8;
+            --red: #ef4444;
+            --red-glow: rgba(239, 68, 68, 0.25);
+            --green: #4ade80;
+            --amber: #f59e0b;
+            --purple: #c084fc;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text-main);
+            font-family: 'Outfit', sans-serif;
+            min-height: 100vh;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-image: 
+                radial-gradient(circle at 10% 10%, rgba(0, 240, 255, 0.05) 0%, transparent 40%),
+                radial-gradient(circle at 90% 90%, rgba(239, 68, 68, 0.05) 0%, transparent 40%);
+        }
+
+        /* Header Bar */
+        .gateway-header {
+            width: 100%;
+            max-width: 1180px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .brand-section {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .brand-logo {
+            width: 50px;
+            height: auto;
+            cursor: pointer;
+            filter: drop-shadow(0 0 10px var(--cyan-glow));
+            transition: transform 0.2s ease;
+        }
+
+        .brand-logo:hover {
+            transform: scale(1.06);
+        }
+
+        .brand-title {
+            font-size: 1.25rem;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+        }
+
+        .badge-tag {
+            font-family: 'Fira Code', monospace;
+            font-size: 0.75rem;
+            padding: 4px 10px;
+            border-radius: 4px;
+            background: rgba(0, 240, 255, 0.1);
+            color: var(--cyan);
+            border: 1px solid rgba(0, 240, 255, 0.3);
+            text-transform: uppercase;
+            font-weight: 700;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 12px;
+        }
+
+        .nav-btn {
+            background: var(--surface);
+            color: var(--text-muted);
+            border: 1px solid var(--border);
+            padding: 6px 14px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: 0.85rem;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .nav-btn:hover {
+            color: var(--cyan);
+            border-color: var(--cyan);
+        }
+
+        .nav-btn.primary {
+            background: #0284c7;
+            border-color: #0284c7;
+            color: #fff;
+        }
+
+        .nav-btn.primary:hover {
+            background: #0369a1;
+            box-shadow: 0 0 12px rgba(2, 132, 199, 0.4);
+        }
+
+        /* Challenge Briefing Card */
+        .briefing-card {
+            width: 100%;
+            max-width: 1180px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 22px 28px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+        }
+
+        .briefing-card h1 {
+            font-size: 1.6rem;
+            font-weight: 800;
+            margin-bottom: 8px;
+            color: #fff;
+        }
+
+        .briefing-card p {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+
+        /* CyberShark Packet Analyzer Interface */
+        .analyzer-container {
+            width: 100%;
+            max-width: 1180px;
+            background: #0d121f;
+            border: 1px solid #1e293b;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.5);
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 24px;
+        }
+
+        /* Filter Toolbar */
+        .filter-toolbar {
+            background: #111827;
+            padding: 10px 16px;
+            border-bottom: 1px solid #1e293b;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .filter-label {
+            font-family: 'Fira Code', monospace;
+            font-size: 0.8rem;
+            color: var(--cyan);
+            font-weight: bold;
+        }
+
+        .filter-input {
+            flex: 1;
+            min-width: 240px;
+            background: #090d16;
+            border: 1px solid #334155;
+            color: #38bdf8;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.85rem;
+            outline: none;
+        }
+
+        .filter-input:focus {
+            border-color: var(--cyan);
+            box-shadow: 0 0 8px var(--cyan-glow);
+        }
+
+        .preset-btn {
+            background: #1e293b;
+            color: var(--text-muted);
+            border: 1px solid #334155;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .preset-btn:hover, .preset-btn.active {
+            color: #fff;
+            border-color: var(--cyan);
+            background: rgba(0, 240, 255, 0.15);
+        }
+
+        /* Packet List Table */
+        .packet-table-wrapper {
+            height: 250px;
+            overflow-y: auto;
+            border-bottom: 1px solid #1e293b;
+            background: #0a0e1a;
+        }
+
+        table.packet-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.8rem;
+            text-align: left;
+        }
+
+        table.packet-table th {
+            position: sticky;
+            top: 0;
+            background: #111827;
+            color: var(--text-muted);
+            padding: 8px 12px;
+            border-bottom: 1px solid #334155;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            z-index: 2;
+        }
+
+        table.packet-table td {
+            padding: 5px 12px;
+            border-bottom: 1px solid rgba(31, 41, 61, 0.5);
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        /* Wireshark-authentic row colorings */
+        tr.proto-http {
+            background: rgba(74, 222, 128, 0.12);
+            color: #86efac;
+        }
+        tr.proto-dns {
+            background: rgba(56, 189, 248, 0.1);
+            color: #7dd3fc;
+        }
+        tr.proto-tcp {
+            background: rgba(148, 163, 184, 0.05);
+            color: #cbd5e1;
+        }
+        tr.proto-arp {
+            background: rgba(245, 158, 11, 0.1);
+            color: #fde047;
+        }
+        tr.proto-tls {
+            background: rgba(192, 132, 252, 0.1);
+            color: #d8b4fe;
+        }
+
+        tr.packet-row:hover {
+            filter: brightness(1.25);
+        }
+
+        tr.packet-row.selected {
+            outline: 2px solid var(--cyan) !important;
+            background: rgba(0, 240, 255, 0.25) !important;
+            color: #fff !important;
+        }
+
+        /* Dissection Pane & Hex Dump Grid */
+        .inspector-split {
+            display: grid;
+            grid-template-columns: 1.15fr 1fr;
+            height: 250px;
+            background: #090d16;
+        }
+
+        /* Tree Dissection Pane */
+        .dissection-pane {
+            border-right: 1px solid #1e293b;
+            padding: 12px 16px;
+            overflow-y: auto;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.8rem;
+            color: #cbd5e1;
+        }
+
+        .tree-node {
+            margin-bottom: 6px;
+            user-select: text;
+        }
+
+        .tree-header {
+            font-weight: 700;
+            color: #fff;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .tree-header:hover {
+            color: var(--cyan);
+        }
+
+        .tree-children {
+            padding-left: 18px;
+            margin-top: 4px;
+            border-left: 1px dashed #334155;
+            color: var(--text-muted);
+            font-size: 0.76rem;
+            line-height: 1.6;
+        }
+
+        .tree-highlight {
+            color: var(--green);
+            font-weight: bold;
+            background: rgba(74, 222, 128, 0.15);
+            padding: 1px 4px;
+            border-radius: 3px;
+        }
+
+        /* Hex & ASCII Dump Pane */
+        .hexdump-pane {
+            padding: 12px 16px;
+            overflow-y: auto;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.74rem;
+            line-height: 1.45;
+            background: #070a12;
+            color: #94a3b8;
+        }
+
+        .hex-line {
+            display: flex;
+            gap: 16px;
+            white-space: pre;
+        }
+
+        .hex-offset {
+            color: var(--text-muted);
+        }
+
+        .hex-bytes {
+            color: #cbd5e1;
+        }
+
+        .hex-ascii {
+            color: var(--cyan);
+        }
+
+        /* Submission & Access Card */
+        .submission-card {
+            width: 100%;
+            max-width: 1180px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+        }
+
+        .submit-form {
+            display: flex;
+            gap: 12px;
+            width: 100%;
+            max-width: 620px;
+            margin-top: 14px;
+        }
+
+        .input-token {
+            flex: 1;
+            padding: 12px 16px;
+            background: #090d16;
+            border: 1px solid #334155;
+            color: var(--cyan);
+            font-family: 'Fira Code', monospace;
+            font-size: 1rem;
+            border-radius: 6px;
+            outline: none;
+        }
+
+        .input-token:focus {
+            border-color: var(--cyan);
+            box-shadow: 0 0 10px var(--cyan-glow);
+        }
+
+        .btn-submit {
+            background: #0284c7;
+            color: #fff;
+            border: none;
+            padding: 12px 24px;
+            font-family: inherit;
+            font-weight: 700;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-submit:hover {
+            background: #0369a1;
+            box-shadow: 0 0 14px rgba(2, 132, 199, 0.4);
+        }
+
+        #statusMsg {
+            margin-top: 16px;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.95rem;
+            min-height: 24px;
+        }
+
+        .status-granted {
+            color: var(--green);
+            text-shadow: 0 0 8px rgba(74, 222, 128, 0.4);
+        }
+
+        .status-denied {
+            color: var(--red);
+            text-shadow: 0 0 8px rgba(239, 68, 68, 0.4);
+        }
+
+        @media (max-width: 900px) {
+            .inspector-split {
+                grid-template-columns: 1fr;
+                height: 400px;
+            }
+            .dissection-pane {
+                border-right: none;
+                border-bottom: 1px solid #1e293b;
+            }
+            .submit-form {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Top Navigation Bar -->
+    <header class="gateway-header">
+        <div class="brand-section">
+            <img id="brandLogo" src="../assets/baysec-blue.png" alt="BaySec Crest" class="brand-logo" onclick="toggleLogoTheme()" title="Click to toggle crest" />
+            <div>
+                <div class="brand-title">BaySec Security Gateway</div>
+                <span class="badge-tag">CHALLENGE 0x02 • PACKET ANALYSIS</span>
+            </div>
+        </div>
+
+        <div class="nav-links">
+            <a href="traffic_analysis_0x02.pcap" download class="nav-btn primary" title="Download raw packet capture for Wireshark">
+                ⬇ Download .PCAP
+            </a>
+            <a href="presentation.html" class="nav-btn">
+                📊 Week 5 Deck
+            </a>
+            <a href="../leaderboard.html" class="nav-btn">
+                🏆 Leaderboard
+            </a>
+        </div>
+    </header>
+
+    <!-- Briefing Card -->
+    <section class="briefing-card">
+        <h1>Challenge 0x02: The Intercepted Uplink</h1>
+        <p>
+            An unencrypted telemetry uplink was captured on our internal laboratory subnet. An operator transmitted an authentication beacon to register their field station. 
+            Use the in-browser <strong>CyberShark Packet Analyzer</strong> below (or download the <code>.pcap</code> to inspect in desktop Wireshark) to filter protocol traffic, inspect the payload, and retrieve the flag token.
+        </p>
+    </section>
+
+    <!-- CyberShark Packet Analyzer Terminal -->
+    <section class="analyzer-container">
+        
+        <!-- Filter Toolbar -->
+        <div class="filter-toolbar">
+            <span class="filter-label">Filter:</span>
+            <input type="text" id="filterInput" class="filter-input" placeholder="Apply display filter (e.g. http, tcp, dns, port 8080)" oninput="applyFilter()" />
+            <button class="preset-btn active" onclick="setPreset('')">Clear</button>
+            <button class="preset-btn" onclick="setPreset('http')">http</button>
+            <button class="preset-btn" onclick="setPreset('dns')">dns</button>
+            <button class="preset-btn" onclick="setPreset('tcp')">tcp</button>
+            <button class="preset-btn" onclick="setPreset('8080')">port 8080</button>
+        </div>
+
+        <!-- Packet List Table -->
+        <div class="packet-table-wrapper">
+            <table class="packet-table">
+                <thead>
+                    <tr>
+                        <th style="width: 45px;">No.</th>
+                        <th style="width: 80px;">Time</th>
+                        <th style="width: 140px;">Source</th>
+                        <th style="width: 140px;">Destination</th>
+                        <th style="width: 85px;">Protocol</th>
+                        <th style="width: 70px;">Length</th>
+                        <th>Info</th>
+                    </tr>
+                </thead>
+                <tbody id="packetTableBody">
+                    <!-- Populated dynamically by JavaScript -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Packet Dissection & Hex Dump Split View -->
+        <div class="inspector-split">
+            
+            <!-- Left: Protocol Tree Dissection -->
+            <div class="dissection-pane" id="dissectionPane">
+                <div style="color: var(--text-muted); font-style: italic; padding: 20px;">
+                    Select a packet from the list above to dissect its protocol headers and payload.
+                </div>
+            </div>
+
+            <!-- Right: Hex & ASCII Dump -->
+            <div class="hexdump-pane" id="hexdumpPane">
+                <div style="color: var(--text-muted); font-style: italic; padding: 20px;">
+                    Raw packet bytes will appear here.
+                </div>
+            </div>
+
+        </div>
+
+    </section>
+
+    <!-- Submission Card -->
+    <section class="submission-card">
+        <h2 style="font-size: 1.3rem; margin-bottom: 6px;">Submit Authorization Flag</h2>
+        <p style="color: var(--text-muted); font-size: 0.9rem;">
+            Format: <code>sfbu{...}</code> • Recovered from the intercepted HTTP transmission.
+        </p>
+
+        <form class="submit-form" onsubmit="event.preventDefault(); verifyFlag();">
+            <input type="text" id="flagInput" class="input-token" placeholder="sfbu{...}" autocomplete="off" />
+            <button type="submit" class="btn-submit">SUBMIT TOKEN</button>
+        </form>
+
+        <div id="statusMsg"></div>
+    </section>
+
+    <!-- Script: Packet Data, Dissection & Verification -->
+    <script>
+        // 22 Captured Packets matching traffic_analysis_0x02.pcap
+        const packets = [
+            {
+                no: 1, time: "0.010", src: "00:1a:2b:3c:4d:5e", dst: "Broadcast", proto: "ARP", len: 42,
+                info: "Who has 192.168.1.1? Tell 192.168.1.42",
+                details: [
+                    { title: "Frame 1: 42 bytes on wire", items: ["Arrival Time: Sep 09, 2026 12:00:00.010 UTC", "Frame Number: 1", "Frame Length: 42 bytes"] },
+                    { title: "Ethernet II", items: ["Destination: Broadcast (ff:ff:ff:ff:ff:ff)", "Source: Realtek (00:1a:2b:3c:4d:5e)", "Type: ARP (0x0806)"] },
+                    { title: "Address Resolution Protocol (request)", items: ["Hardware type: Ethernet (1)", "Protocol type: IPv4 (0x0800)", "Opcode: request (1)", "Sender MAC: 00:1a:2b:3c:4d:5e", "Sender IP: 192.168.1.42", "Target MAC: 00:00:00:00:00:00", "Target IP: 192.168.1.1"] }
+                ],
+                hex: "0000  ff ff ff ff ff ff 00 1a 2b 3c 4d 5e 08 06 00 01   ........+<M^....\n0010  08 00 06 04 00 01 00 1a 2b 3c 4d 5e c0 a8 01 2a   ........+<M^...*\n0020  00 00 00 00 00 00 c0 a8 01 01                     .........."
+            },
+            {
+                no: 2, time: "0.020", src: "00:0c:29:ab:cd:ef", dst: "00:1a:2b:3c:4d:5e", proto: "ARP", len: 42,
+                info: "192.168.1.1 is at 00:0c:29:ab:cd:ef",
+                details: [
+                    { title: "Frame 2: 42 bytes on wire", items: ["Arrival Time: Sep 09, 2026 12:00:00.020 UTC", "Frame Number: 2", "Frame Length: 42 bytes"] },
+                    { title: "Ethernet II", items: ["Destination: Realtek (00:1a:2b:3c:4d:5e)", "Source: Cisco (00:0c:29:ab:cd:ef)", "Type: ARP (0x0806)"] },
+                    { title: "Address Resolution Protocol (reply)", items: ["Opcode: reply (2)", "Sender MAC: 00:0c:29:ab:cd:ef", "Sender IP: 192.168.1.1", "Target MAC: 00:1a:2b:3c:4d:5e", "Target IP: 192.168.1.42"] }
+                ],
+                hex: "0000  00 1a 2b 3c 4d 5e 00 0c 29 ab cd ef 08 06 00 01   ..+<M^..).......\n0010  08 00 06 04 00 02 00 0c 29 ab cd ef c0 a8 01 01   ........).......\n0020  00 1a 2b 3c 4d 5e c0 a8 01 2a                     ..+<M^...*"
+            },
+            {
+                no: 3, time: "0.150", src: "192.168.1.42", dst: "192.168.1.1", proto: "DNS", len: 78,
+                info: "Standard query 0x1337 A gateway.baysec.sfbu",
+                details: [
+                    { title: "Frame 3: 78 bytes on wire", items: ["Protocols in frame: eth:ip:udp:dns"] },
+                    { title: "Internet Protocol Version 4", items: ["Src: 192.168.1.42", "Dst: 192.168.1.1", "Protocol: UDP (17)"] },
+                    { title: "User Datagram Protocol", items: ["Src Port: 54312", "Dst Port: 53", "Length: 44"] },
+                    { title: "Domain Name System (query)", items: ["Transaction ID: 0x1337", "Queries: 1", "Name: gateway.baysec.sfbu", "Type: A (1)"] }
+                ],
+                hex: "0000  00 0c 29 ab cd ef 00 1a 2b 3c 4d 5e 08 00 45 00   ..).....+<M^..E.\n0010  00 40 12 34 40 00 40 11 b6 8b c0 a8 01 2a c0 a8   .@.4@.@......*..\n0020  01 01 d4 28 00 35 00 2c 00 00 13 37 01 00 00 01   ...(.5.,...7....\n0030  00 00 00 00 00 00 07 67 61 74 65 77 61 79 06 62   .......gateway.b\n0040  61 79 73 65 63 04 73 66 62 75 00 00 01 00 01       aysec.sfbu....."
+            },
+            {
+                no: 4, time: "0.180", src: "192.168.1.1", dst: "192.168.1.42", proto: "DNS", len: 94,
+                info: "Standard query response 0x1337 A gateway.baysec.sfbu A 10.0.0.88",
+                details: [
+                    { title: "Frame 4: 94 bytes on wire", items: ["Protocols in frame: eth:ip:udp:dns"] },
+                    { title: "Domain Name System (response)", items: ["Transaction ID: 0x1337", "Answers: 1", "gateway.baysec.sfbu: type A, class IN, addr 10.0.0.88"] }
+                ],
+                hex: "0000  00 1a 2b 3c 4d 5e 00 0c 29 ab cd ef 08 00 45 00   ..+<M^..).....E.\n0010  00 50 12 35 40 00 40 11 b6 7a c0 a8 01 01 c0 a8   .P.5@.@..z......\n0020  01 2a 00 35 d4 28 00 3c 00 00 13 37 81 80 00 01   .*.5.(.<...7....\n0030  00 01 00 00 00 00 07 67 61 74 65 77 61 79 06 62   .......gateway.b\n0040  61 79 73 65 63 04 73 66 62 75 00 00 01 00 01 c0   aysec.sfbu......\n0050  0c 00 01 00 01 00 00 01 2c 00 04 0a 00 00 58       ........,.....X"
+            },
+            {
+                no: 5, time: "0.300", src: "192.168.1.42", dst: "10.0.0.88", proto: "TCP", len: 54,
+                info: "49820 → 80 [SYN] Seq=0 Win=64240 Len=0",
+                details: [
+                    { title: "Frame 5: 54 bytes on wire", items: ["Protocols in frame: eth:ip:tcp"] },
+                    { title: "Transmission Control Protocol", items: ["Src Port: 49820", "Dst Port: 80", "Flags: 0x002 (SYN)", "Sequence Number: 0"] }
+                ],
+                hex: "0000  00 0c 29 ab cd ef 00 1a 2b 3c 4d 5e 08 00 45 00   ..).....+<M^..E.\n0010  00 28 03 e8 40 00 40 06 c4 eb c0 a8 01 2a 0a 00   .(..@.@......*..\n0020  00 58 c2 9c 00 50 00 00 03 e8 00 00 00 00 50 02   .X...P........P.\n0030  fa f0 00 00 00 00                                  ......"
+            },
+            {
+                no: 6, time: "0.330", src: "10.0.0.88", dst: "192.168.1.42", proto: "TCP", len: 54,
+                info: "80 → 49820 [SYN, ACK] Seq=0 Ack=1 Win=64240 Len=0",
+                details: [
+                    { title: "Frame 6: 54 bytes on wire", items: ["Protocols in frame: eth:ip:tcp"] },
+                    { title: "Transmission Control Protocol", items: ["Src Port: 80", "Dst Port: 49820", "Flags: 0x012 (SYN, ACK)", "Acknowledgment: 1"] }
+                ],
+                hex: "0000  00 1a 2b 3c 4d 5e 00 0c 29 ab cd ef 08 00 45 00   ..+<M^..).....E.\n0010  00 28 13 88 40 00 40 06 b5 4b 0a 00 00 58 c0 a8   .(..@.@..K...X..\n0020  01 2a 00 50 c2 9c 00 00 13 88 00 00 03 e9 50 12   .*.P..........P.\n0030  fa f0 00 00 00 00                                  ......"
+            },
+            {
+                no: 7, time: "0.340", src: "192.168.1.42", dst: "10.0.0.88", proto: "TCP", len: 54,
+                info: "49820 → 80 [ACK] Seq=1 Ack=1 Win=64240 Len=0",
+                details: [
+                    { title: "Frame 7: 54 bytes on wire", items: ["Protocols in frame: eth:ip:tcp"] },
+                    { title: "Transmission Control Protocol", items: ["Flags: 0x010 (ACK)", "3-Way Handshake Established"] }
+                ],
+                hex: "0000  00 0c 29 ab cd ef 00 1a 2b 3c 4d 5e 08 00 45 00   ..).....+<M^..E.\n0010  00 28 03 e9 40 00 40 06 c4 ea c0 a8 01 2a 0a 00   .(..@.@......*..\n0020  00 58 c2 9c 00 50 00 00 03 e9 00 00 13 89 50 10   .X...P........P.\n0030  fa f0 00 00 00 00                                  ......"
+            },
+            {
+                no: 8, time: "0.400", src: "192.168.1.42", dst: "10.0.0.88", proto: "HTTP", len: 172,
+                info: "GET /healthcheck HTTP/1.1",
+                details: [
+                    { title: "Frame 8: 172 bytes on wire", items: ["Protocols in frame: eth:ip:tcp:http"] },
+                    { title: "Hypertext Transfer Protocol", items: [
+                        "GET /healthcheck HTTP/1.1",
+                        "Host: gateway.baysec.sfbu",
+                        "User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:128.0)",
+                        "Accept: */*"
+                    ]}
+                ],
+                hex: "0000  47 45 54 20 2f 68 65 61 6c 74 68 63 68 65 63 6b   GET /healthcheck\n0010  20 48 54 54 50 2f 31 2e 31 0d 0a 48 6f 73 74 3a    HTTP/1.1..Host:\n0020  20 67 61 74 65 77 61 79 2e 62 61 79 73 65 63 2e    gateway.baysec.\n0030  73 66 62 75 0d 0a 55 73 65 72 2d 41 67 65 6e 74   sfbu..User-Agent"
+            },
+            {
+                no: 9, time: "0.450", src: "10.0.0.88", dst: "192.168.1.42", proto: "HTTP", len: 148,
+                info: "HTTP/1.1 200 OK (text/plain)",
+                details: [
+                    { title: "Frame 9: 148 bytes on wire", items: ["Protocols in frame: eth:ip:tcp:http"] },
+                    { title: "Hypertext Transfer Protocol", items: [
+                        "HTTP/1.1 200 OK",
+                        "Server: nginx/1.24.0 (Ubuntu)",
+                        "Content-Type: text/plain",
+                        "Content-Length: 18",
+                        "Data: SYSTEM ONLINE: OK"
+                    ]}
+                ],
+                hex: "0000  48 54 54 50 2f 31 2e 31 20 32 30 30 20 4f 4b 0d   HTTP/1.1 200 OK.\n0010  0a 53 65 72 76 65 72 3a 20 6e 67 69 6e 78 2f 31   .Server: nginx/1\n0020  2e 32 34 2e 30 0d 0a 43 6f 6e 74 65 6e 74 2d 54   .24.0..Content-T\n0030  79 70 65 3a 20 74 65 78 74 2f 70 6c 61 69 6e 0d   ype: text/plain."
+            },
+            {
+                no: 10, time: "0.600", src: "192.168.1.42", dst: "104.21.48.22", proto: "TCP", len: 54,
+                info: "51220 → 443 [SYN] Seq=0 Win=64240 Len=0",
+                details: [{ title: "Frame 10: 54 bytes", items: ["Protocols in frame: eth:ip:tcp (TLS Handshake initiation)"] }],
+                hex: "0000  00 0c 29 ab cd ef 00 1a 2b 3c 4d 5e 08 00 45 00   ..).....+<M^..E.\n0010  00 28 07 d0 40 00 40 06 87 a3 c0 a8 01 2a 68 15   .(..@.@......*h."
+            },
+            {
+                no: 11, time: "0.700", src: "192.168.1.42", dst: "104.21.48.22", proto: "TLSv1.3", len: 212,
+                info: "Client Hello",
+                details: [{ title: "Transport Layer Security", items: ["TLSv1.3 Record Layer: Handshake Protocol: Client Hello", "Encrypted payload (Not accessible in plaintext)"] }],
+                hex: "0000  16 03 01 00 98 01 00 00 94 03 03 4a e8 12 a9 01   ...........J....\n0010  2c 88 12 90 fa 14 00 12 40 19 b2 c1 00 20 11 40   ,.......@.... .@"
+            },
+            {
+                no: 12, time: "1.200", src: "192.168.1.42", dst: "10.0.0.88", proto: "TCP", len: 54,
+                info: "55432 → 8080 [SYN] Seq=0 Win=64240 Len=0",
+                details: [{ title: "Transmission Control Protocol", items: ["Src Port: 55432", "Dst Port: 8080", "Flags: SYN"] }],
+                hex: "0000  00 0c 29 ab cd ef 00 1a 2b 3c 4d 5e 08 00 45 00   ..).....+<M^..E.\n0010  00 28 0b b8 40 00 40 06 c0 de c0 a8 01 2a 0a 00   .(..@.@......*..\n0020  00 58 d8 88 1f 90 00 00 0b b8 00 00 00 00 50 02   .X............P."
+            },
+            {
+                no: 13, time: "1.230", src: "10.0.0.88", dst: "192.168.1.42", proto: "TCP", len: 54,
+                info: "8080 → 55432 [SYN, ACK] Seq=0 Ack=1 Win=64240 Len=0",
+                details: [{ title: "Transmission Control Protocol", items: ["Src Port: 8080", "Dst Port: 55432", "Flags: SYN, ACK"] }],
+                hex: "0000  00 1a 2b 3c 4d 5e 00 0c 29 ab cd ef 08 00 45 00   ..+<M^..).....E.\n0010  00 28 23 28 40 00 40 06 a5 ab 0a 00 00 58 c0 a8   .(#(..@......X..\n0020  01 2a 1f 90 d8 88 00 00 23 28 00 00 0b b9 50 12   .*......#(....P."
+            },
+            {
+                no: 14, time: "1.240", src: "192.168.1.42", dst: "10.0.0.88", proto: "TCP", len: 54,
+                info: "55432 → 8080 [ACK] Seq=1 Ack=1 Win=64240 Len=0",
+                details: [{ title: "Transmission Control Protocol", items: ["Flags: ACK", "Connection Established on Uplink Port 8080"] }],
+                hex: "0000  00 0c 29 ab cd ef 00 1a 2b 3c 4d 5e 08 00 45 00   ..).....+<M^..E.\n0010  00 28 0b b9 40 00 40 06 c0 dd c0 a8 01 2a 0a 00   .(..@.@......*..\n0020  00 58 d8 88 1f 90 00 00 0b b9 00 00 23 29 50 10   .X..........#)P."
+            },
+            {
+                no: 15, time: "1.300", src: "192.168.1.42", dst: "10.0.0.88", proto: "HTTP", len: 432,
+                info: "POST /api/v2/telemetry/uplink HTTP/1.1 (application/x-www-form-urlencoded)",
+                details: [
+                    { title: "Frame 15: 432 bytes on wire", items: ["Protocols in frame: eth:ip:tcp:http:data-text-lines"] },
+                    { title: "Internet Protocol Version 4", items: ["Src: 192.168.1.42", "Dst: 10.0.0.88"] },
+                    { title: "Transmission Control Protocol", items: ["Src Port: 55432", "Dst Port: 8080", "Flags: PSH, ACK"] },
+                    { title: "Hypertext Transfer Protocol", items: [
+                        "POST /api/v2/telemetry/uplink HTTP/1.1",
+                        "Host: gateway.baysec.sfbu:8080",
+                        "User-Agent: BaySec-Telemetry-Uplink/2.4 (x86_64; Linux)",
+                        "Content-Type: application/x-www-form-urlencoded",
+                        "Authorization: Basic c2ZidV9hZG1pbjpoNGNrM3JfcDRzc3cwcmQ=",
+                        "Content-Length: 107"
+                    ]},
+                    { title: "HTML Form URL Encoded: application/x-www-form-urlencoded", items: [
+                        "station_id = SFBU-LAB-01",
+                        "operator_callsign = 0xGhost",
+                        "<span class='tree-highlight'>auth_token = sfbu{w1r3sh4rk_p4ck3t_sn1ff3r_2026}</span>",
+                        "status = beacon_active"
+                    ]}
+                ],
+                hex: "0000  50 4f 53 54 20 2f 61 70 69 2f 76 32 2f 74 65 6c   POST /api/v2/tel\n0010  65 6d 65 74 72 79 2f 75 70 6c 69 6e 6b 20 48 54   emetry/uplink HT\n0020  54 50 2f 31 2e 31 0d 0a 48 6f 73 74 3a 20 67 61   TP/1.1..Host: ga\n0030  74 65 77 61 79 2e 62 61 79 73 65 63 2e 73 66 62   teway.baysec.sfb\n0040  75 3a 38 30 38 30 0d 0a 41 75 74 68 6f 72 69 7a   u:8080..Authoriz\n0050  61 74 69 6f 6e 3a 20 42 61 73 69 63 20 63 32 5a   ation: Basic c2Z\n0060  69 64 56 39 68 5a 47 31 70 62 6a 6f 6f 4e 47 4e   idV9hZG1pbjooNGN\n0070  72 4d 33 4a 66 63 44 52 7a 63 33 63 30 63 6d 51   rM3JfcDRzc3c0cmQ\n0080  3d 0d 0a 0d 0a 73 74 61 74 69 6f 6e 5f 69 64 3d   =....station_id=\n0090  53 46 42 55 2d 4c 41 42 2d 30 31 26 6f 70 65 72   SFBU-LAB-01&oper\n00a0  61 74 6f 72 5f 63 61 6c 6c 73 69 67 6e 3d 30 78   ator_callsign=0x\n00b0  47 68 6f 73 74 26 61 75 74 68 5f 74 6f 6b 65 6e   Ghost&auth_token\n00c0  3d 73 66 62 75 7b 77 31 72 33 73 68 34 72 6b 5f   =sfbu{w1r3sh4rk_\n00d0  70 34 63 6b 33 74 5f 73 6e 31 66 66 33 72 5f 32   p4ck3t_sn1ff3r_2\n00e0  30 32 36 7d 26 73 74 61 74 75 73 3d 61 63 74 69   026}&status=acti\n00f0  76 65                                             ve"
+            },
+            {
+                no: 16, time: "1.350", src: "10.0.0.88", dst: "192.168.1.42", proto: "HTTP", len: 168,
+                info: "HTTP/1.1 200 OK (application/json)",
+                details: [
+                    { title: "Hypertext Transfer Protocol", items: [
+                        "HTTP/1.1 200 OK",
+                        "Server: BaySec-Gatekeeper/1.0",
+                        "Content-Type: application/json",
+                        "JSON: {\"status\":\"granted\",\"msg\":\"Operator beacon authenticated. Welcome.\"}"
+                    ]}
+                ],
+                hex: "0000  48 54 54 50 2f 31 2e 31 20 32 30 30 20 4f 4b 0d   HTTP/1.1 200 OK.\n0010  0a 53 65 72 76 65 72 3a 20 42 61 79 53 65 63 2d   .Server: BaySec-\n0020  47 61 74 65 6b 65 65 70 65 72 2f 31 2e 30 0d 0a   Gatekeeper/1.0..\n0030  7b 22 73 74 61 74 75 73 22 3a 22 67 72 61 6e 74   {\"status\":\"grant"
+            },
+            {
+                no: 17, time: "1.800", src: "192.168.1.42", dst: "10.0.0.88", proto: "TCP", len: 54,
+                info: "55432 → 8080 [FIN, ACK] Seq=146 Ack=75 Win=64240",
+                details: [{ title: "Transmission Control Protocol", items: ["Flags: FIN, ACK (Connection Teardown)"] }],
+                hex: "0000  00 0c 29 ab cd ef 00 1a 2b 3c 4d 5e 08 00 45 00   ..).....+<M^..E.\n0010  00 28 0b ba 40 00 40 06 c0 dc c0 a8 01 2a 0a 00   .(..@.@......*..\n0020  00 58 d8 88 1f 90 00 00 0c 4b 00 00 23 73 50 11   .X.......K..#sP."
+            },
+            {
+                no: 18, time: "1.850", src: "10.0.0.88", dst: "192.168.1.42", proto: "TCP", len: 54,
+                info: "8080 → 55432 [ACK] Seq=75 Ack=147 Win=64240",
+                details: [{ title: "Transmission Control Protocol", items: ["Flags: ACK (Teardown Complete)"] }],
+                hex: "0000  00 1a 2b 3c 4d 5e 00 0c 29 ab cd ef 08 00 45 00   ..+<M^..).....E.\n0010  00 28 23 29 40 00 40 06 a5 aa 0a 00 00 58 c0 a8   .(#)@.@......X..\n0020  01 2a 1f 90 d8 88 00 00 23 73 00 00 0c 4c 50 10   .*......#s...LP."
+            }
+        ];
+
+        let selectedPacketIndex = null;
+
+        function renderTable(filterText = "") {
+            const tbody = document.getElementById("packetTableBody");
+            tbody.innerHTML = "";
+            const q = filterText.toLowerCase().trim();
+
+            packets.forEach((pkt, idx) => {
+                let match = true;
+                if (q) {
+                    const rowStr = `${pkt.proto} ${pkt.src} ${pkt.dst} ${pkt.info}`.toLowerCase();
+                    match = rowStr.includes(q);
+                }
+
+                if (!match) return;
+
+                const tr = document.createElement("tr");
+                let protoClass = "proto-tcp";
+                if (pkt.proto === "HTTP") protoClass = "proto-http";
+                else if (pkt.proto === "DNS") protoClass = "proto-dns";
+                else if (pkt.proto === "ARP") protoClass = "proto-arp";
+                else if (pkt.proto.startsWith("TLS")) protoClass = "proto-tls";
+
+                tr.className = `packet-row ${protoClass} ${selectedPacketIndex === idx ? 'selected' : ''}`;
+                tr.onclick = () => selectPacket(idx);
+
+                tr.innerHTML = `
+                    <td>${pkt.no}</td>
+                    <td>${pkt.time}</td>
+                    <td>${pkt.src}</td>
+                    <td>${pkt.dst}</td>
+                    <td><span style="font-weight: bold;">${pkt.proto}</span></td>
+                    <td>${pkt.len}</td>
+                    <td>${pkt.info}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function selectPacket(index) {
+            selectedPacketIndex = index;
+            renderTable(document.getElementById("filterInput").value);
+
+            const pkt = packets[index];
+            const dPane = document.getElementById("dissectionPane");
+            const hPane = document.getElementById("hexdumpPane");
+
+            // Build Dissection Tree
+            let treeHtml = "";
+            pkt.details.forEach((sec, sIdx) => {
+                treeHtml += `
+                    <div class="tree-node">
+                        <div class="tree-header">▾ ${sec.title}</div>
+                        <div class="tree-children">
+                            ${sec.items.map(item => `<div>${item}</div>`).join('')}
+                        </div>
+                    </div>
+                `;
+            });
+            dPane.innerHTML = treeHtml;
+
+            // Build Hex Dump
+            hPane.innerHTML = `<pre style="font-family: inherit; margin: 0;">${pkt.hex}</pre>`;
+        }
+
+        function applyFilter() {
+            const val = document.getElementById("filterInput").value;
+            renderTable(val);
+        }
+
+        function setPreset(query) {
+            document.getElementById("filterInput").value = query;
+            document.querySelectorAll(".preset-btn").forEach(btn => {
+                if (btn.innerText.toLowerCase() === query || (query === "" && btn.innerText === "Clear") || (query === "8080" && btn.innerText.includes("8080"))) {
+                    btn.classList.add("active");
+                } else {
+                    btn.classList.remove("active");
+                }
+            });
+            renderTable(query);
+        }
+
+        function toggleLogoTheme() {
+            const logo = document.getElementById("brandLogo");
+            if (logo.src.includes("baysec-blue")) {
+                logo.src = "../assets/baysec-red.png";
+            } else {
+                logo.src = "../assets/baysec-blue.png";
+            }
+        }
+
+        function verifyFlag() {
+            const input = document.getElementById("flagInput").value.trim();
+            const status = document.getElementById("statusMsg");
+            const logo = document.getElementById("brandLogo");
+
+            if (input === "sfbu{w1r3sh4rk_p4ck3t_sn1ff3r_2026}") {
+                status.className = "status-granted";
+                status.innerText = "ACCESS GRANTED. Flag Verified: +100 League Points!";
+                logo.src = "../assets/baysec-blue.png";
+            } else {
+                status.className = "status-denied";
+                status.innerText = "ACCESS DENIED: Invalid flag format or incorrect payload token.";
+                logo.src = "../assets/baysec-red.png";
+            }
+        }
+
+        // Initialize table and auto-select HTTP POST packet (#15) on first load
+        renderTable();
+        selectPacket(14); // packet 15 in 0-indexed array
+    </script>
+</body>
+
+</html>
