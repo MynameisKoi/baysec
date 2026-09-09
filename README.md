@@ -21,7 +21,8 @@
 ## 🌐 Live Portal & Challenges
 
 - **Main Gateway**: [https://MynameisKoi.github.io/baysec/](https://MynameisKoi.github.io/baysec/) *(redirects directly to active challenge)*
-- **Week 3 Challenge**: [https://MynameisKoi.github.io/baysec/week3/](https://MynameisKoi.github.io/baysec/week3/) — *BaySec Security Gateway (Challenge 0x01)*
+- **Week 4 Kickoff Presentation**: [https://MynameisKoi.github.io/baysec/week4/presentation.html](https://MynameisKoi.github.io/baysec/week4/presentation.html)
+- **Week 4 Challenge (0x01)**: [https://MynameisKoi.github.io/baysec/week4/](https://MynameisKoi.github.io/baysec/week4/) — *BaySec Security Gateway*
 
 ---
 
@@ -36,5 +37,9 @@
 
 ## 📁 Repository Structure
 - `index.html` — Root redirect to active weekly challenge
-- `week3/index.html` — Week 3 challenge: BaySec Security Gateway
+- `week4/index.html` — Week 4 challenge: BaySec Security Gateway (Challenge 0x01)
+- `week4/presentation.html` — Interactive browser-based kickoff presentation deck
+- `week4/BaySec_Week4_Kickoff.pptx` — Widescreen 16:9 PowerPoint presentation with speaker notes
+- `week4/generate_presentation.py` — Python script to generate the .pptx presentation and QR codes
 - `assets/` — Official BaySec logos and brand assets
+

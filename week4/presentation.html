@@ -1,0 +1,1009 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>BaySec @ SFBU — Kickoff Presentation (Fall 2026)</title>
+    <link rel="icon" type="image/png" href="../assets/baysec-blue.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600;700&family=Outfit:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0b0f19;
+            --surface: #111827;
+            --surface-elevated: #162032;
+            --border: #1f293d;
+            --cyan: #00f0ff;
+            --cyan-glow: rgba(0, 240, 255, 0.25);
+            --blue: #38bdf8;
+            --red: #ef4444;
+            --red-glow: rgba(239, 68, 68, 0.25);
+            --purple: #a855f7;
+            --green: #4ade80;
+            --amber: #f59e0b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --text-subtle: #64748b;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text-main);
+            font-family: 'Outfit', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(0, 240, 255, 0.05) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(239, 68, 68, 0.04) 0%, transparent 40%);
+        }
+
+        /* Presentation Top Bar */
+        .top-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 24px;
+            background: rgba(17, 24, 39, 0.85);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .brand-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .brand-header img {
+            width: 32px;
+            height: 32px;
+            filter: drop-shadow(0 0 8px var(--cyan-glow));
+        }
+
+        .brand-header span {
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            font-size: 1.05rem;
+            color: var(--text-main);
+        }
+
+        .controls-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .nav-btn {
+            background: var(--surface-elevated);
+            color: var(--text-main);
+            border: 1px solid var(--border);
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-family: inherit;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .nav-btn:hover {
+            border-color: var(--cyan);
+            color: var(--cyan);
+            box-shadow: 0 0 10px var(--cyan-glow);
+        }
+
+        .nav-btn.primary {
+            background: #0284c7;
+            border-color: #0284c7;
+            color: #fff;
+        }
+
+        .nav-btn.primary:hover {
+            background: #0369a1;
+            border-color: #0369a1;
+            box-shadow: 0 0 12px rgba(2, 132, 199, 0.4);
+        }
+
+        .slide-counter {
+            font-family: 'Fira Code', monospace;
+            font-size: 0.9rem;
+            color: var(--cyan);
+            padding: 0 10px;
+        }
+
+        /* Slide Stage Container */
+        .stage-container {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+        }
+
+        .slide-deck {
+            width: 100%;
+            max-width: 1200px;
+            aspect-ratio: 16 / 9;
+            position: relative;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6), 0 0 30px rgba(0, 240, 255, 0.08);
+            overflow: hidden;
+            display: flex;
+        }
+
+        .slide {
+            position: absolute;
+            inset: 0;
+            padding: 44px 56px;
+            display: none;
+            flex-direction: column;
+            justify-content: space-between;
+            animation: slideFadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .slide.active {
+            display: flex;
+        }
+
+        @keyframes slideFadeIn {
+            from {
+                opacity: 0;
+                transform: scale(0.985);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        /* Slide Typography & Badges */
+        .slide-tag {
+            display: inline-block;
+            align-self: flex-start;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--cyan);
+            background: rgba(0, 240, 255, 0.1);
+            border: 1px solid rgba(0, 240, 255, 0.3);
+            padding: 4px 10px;
+            border-radius: 4px;
+            margin-bottom: 12px;
+        }
+
+        .slide-tag.red {
+            color: var(--red);
+            background: rgba(239, 68, 68, 0.1);
+            border-color: rgba(239, 68, 68, 0.3);
+        }
+
+        .slide-header {
+            margin-bottom: 24px;
+        }
+
+        .slide-title {
+            font-size: 2.2rem;
+            font-weight: 800;
+            color: var(--text-main);
+            letter-spacing: -0.5px;
+            line-height: 1.2;
+        }
+
+        .slide-subtitle {
+            font-size: 1.05rem;
+            color: var(--blue);
+            margin-top: 6px;
+        }
+
+        /* Grid Layouts */
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 28px;
+            flex: 1;
+        }
+
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 22px;
+            flex: 1;
+        }
+
+        .card {
+            background: var(--surface-elevated);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.2s ease, border-color 0.2s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+        }
+
+        .card.cyan-accent {
+            border-top: 3px solid var(--cyan);
+        }
+
+        .card.red-accent {
+            border-top: 3px solid var(--red);
+        }
+
+        .card.purple-accent {
+            border-top: 3px solid var(--purple);
+        }
+
+        .card.amber-accent {
+            border-top: 3px solid var(--amber);
+        }
+
+        .card.green-accent {
+            border-top: 3px solid var(--green);
+        }
+
+        .card-header {
+            font-family: 'Fira Code', monospace;
+            font-size: 0.85rem;
+            font-weight: 700;
+            margin-bottom: 6px;
+            letter-spacing: 0.5px;
+        }
+
+        .card-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 12px;
+        }
+
+        .card-body {
+            font-size: 0.92rem;
+            line-height: 1.55;
+            color: var(--text-muted);
+            flex: 1;
+        }
+
+        .card-body ul {
+            list-style: none;
+            margin-top: 10px;
+        }
+
+        .card-body li {
+            position: relative;
+            padding-left: 18px;
+            margin-bottom: 8px;
+            color: var(--text-main);
+        }
+
+        .card-body li::before {
+            content: '▸';
+            position: absolute;
+            left: 0;
+            color: var(--cyan);
+        }
+
+        /* Banner Callouts */
+        .callout-banner {
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid var(--blue);
+            border-radius: 6px;
+            padding: 12px 20px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            text-align: center;
+            color: var(--text-main);
+            margin-top: 18px;
+        }
+
+        .callout-banner.alert {
+            border-color: var(--red);
+            background: rgba(239, 68, 68, 0.08);
+            color: #fca5a5;
+        }
+
+        /* Slide 1 Specifics */
+        .slide-title-hero {
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            position: relative;
+        }
+
+        .dual-logos {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 28px;
+            margin: 20px 0;
+        }
+
+        .dual-logos img {
+            width: 130px;
+            height: auto;
+            filter: drop-shadow(0 0 16px rgba(0, 240, 255, 0.35));
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .dual-logos img:hover {
+            transform: scale(1.08);
+        }
+
+        .slide-qr-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            background: var(--surface-elevated);
+            border: 1px solid var(--border);
+            padding: 12px;
+            border-radius: 8px;
+        }
+
+        .slide-qr-wrapper img {
+            width: 100px;
+            height: 100px;
+            border-radius: 4px;
+            background: #fff;
+            padding: 4px;
+        }
+
+        .slide-qr-wrapper span {
+            font-size: 0.8rem;
+            font-weight: 700;
+        }
+
+        .slide-bottom-corners {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            position: absolute;
+            bottom: 30px;
+            left: 0;
+            padding: 0 44px;
+        }
+
+        /* Terminal Window Graphics (Slide 6) */
+        .terminal-window {
+            background: #0d121f;
+            border: 1px solid var(--red);
+            border-radius: 8px;
+            padding: 24px;
+            font-family: 'Fira Code', monospace;
+            box-shadow: 0 0 25px rgba(239, 68, 68, 0.15);
+        }
+
+        .code-box {
+            background: #090d16;
+            border: 1px solid #1e293b;
+            padding: 12px;
+            border-radius: 6px;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.85rem;
+            color: var(--green);
+            overflow-x: auto;
+            margin: 8px 0;
+        }
+
+        /* Live Timer Widget */
+        .timer-widget {
+            background: #090d16;
+            border: 2px solid var(--red);
+            border-radius: 8px;
+            padding: 16px;
+            text-align: center;
+            box-shadow: 0 0 20px var(--red-glow);
+        }
+
+        .timer-display {
+            font-family: 'Fira Code', monospace;
+            font-size: 2.4rem;
+            font-weight: 700;
+            color: var(--red);
+            letter-spacing: 2px;
+            margin: 6px 0;
+        }
+
+        .timer-controls {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            margin-top: 10px;
+        }
+
+        .timer-btn {
+            background: #1e293b;
+            border: 1px solid #334155;
+            color: #fff;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.75rem;
+            padding: 4px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .timer-btn:hover {
+            background: var(--red);
+            border-color: var(--red);
+        }
+
+        /* Speaker Notes Panel */
+        .notes-panel {
+            background: var(--surface);
+            border-top: 1px solid var(--border);
+            padding: 16px 28px;
+            display: none;
+        }
+
+        .notes-panel.visible {
+            display: block;
+        }
+
+        .notes-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.8rem;
+            color: var(--cyan);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .notes-content {
+            font-size: 0.95rem;
+            line-height: 1.6;
+            color: #e2e8f0;
+            font-style: italic;
+            background: rgba(0, 0, 0, 0.25);
+            padding: 12px 18px;
+            border-left: 3px solid var(--cyan);
+            border-radius: 0 6px 6px 0;
+        }
+
+        @media (max-width: 900px) {
+            .stage-container {
+                padding: 10px;
+            }
+            .slide-deck {
+                aspect-ratio: auto;
+                min-height: 600px;
+            }
+            .grid-2, .grid-3 {
+                grid-template-columns: 1fr;
+            }
+            .slide-bottom-corners {
+                position: static;
+                margin-top: 20px;
+                padding: 0;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Presentation Top Control Bar -->
+    <header class="top-bar">
+        <div class="brand-header">
+            <img src="../assets/baysec-blue.png" alt="BaySec Crest" />
+            <span>BaySec @ SFBU</span>
+        </div>
+
+        <div class="controls-group">
+            <button class="nav-btn" onclick="prevSlide()" title="Previous Slide (Left Arrow)">◀ Prev</button>
+            <span id="slideCounter" class="slide-counter">1 / 8</span>
+            <button class="nav-btn" onclick="nextSlide()" title="Next Slide (Right Arrow / Space)">Next ▶</button>
+            <button class="nav-btn" onclick="toggleNotes()" id="notesBtn" title="Toggle Presenter Notes (N)">🎙️ Notes</button>
+            <button class="nav-btn" onclick="toggleFullscreen()" title="Fullscreen Mode (F)">⛶ Fullscreen</button>
+            <a href="BaySec_Week4_Kickoff.pptx" download class="nav-btn primary" title="Download official PowerPoint file">⬇ Download .PPTX</a>
+        </div>
+    </header>
+
+    <!-- Slide Deck Stage -->
+    <main class="stage-container" id="stageContainer">
+        <div class="slide-deck">
+
+            <!-- ================= SLIDE 1 ================= -->
+            <section class="slide active" data-slide="1">
+                <div class="slide-title-hero">
+                    <span class="slide-tag">KICKOFF MEETING | FALL 2026</span>
+                    <h1 class="slide-title" style="font-size: 3rem; margin-top: 8px;">BaySec @ SFBU</h1>
+                    <p class="slide-subtitle" style="font-size: 1.3rem;">Securing the Bay, One Byte at a Time</p>
+
+                    <div class="dual-logos">
+                        <img src="../assets/baysec-blue.png" alt="BaySec Blue Crest" title="Blue Team (Defense)" />
+                        <img src="../assets/baysec-red.png" alt="BaySec Red Crest" title="Red Team (Offense)" />
+                    </div>
+
+                    <p style="color: var(--text-muted); font-size: 1.05rem; max-width: 650px;">
+                        Welcome! Please scan the QR code to check in and join our active channels while we set up.
+                    </p>
+
+                    <div class="slide-bottom-corners">
+                        <div class="slide-qr-wrapper">
+                            <img src="gen_assets/qr_attendance.png" alt="Attendance QR Code" />
+                            <span style="color: var(--cyan);">Scan for Attendance</span>
+                        </div>
+                        <div class="slide-qr-wrapper">
+                            <img src="../assets/qr.png" alt="WhatsApp QR Code" />
+                            <span style="color: var(--green);">Join WhatsApp Community</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ================= SLIDE 2 ================= -->
+            <section class="slide" data-slide="2">
+                <div class="slide-header">
+                    <span class="slide-tag">INTRODUCTION & REVEAL</span>
+                    <h2 class="slide-title">Welcome to BaySec</h2>
+                    <p class="slide-subtitle">Bridging academics with high-impact defensive and offensive security.</p>
+                </div>
+
+                <div class="grid-2">
+                    <div class="card cyan-accent">
+                        <div class="card-header" style="color: var(--cyan);">🛡️ OUR MISSION</div>
+                        <p class="card-body" style="font-size: 1.05rem; margin-bottom: 24px;">
+                            Bridging academic computer science with real-world ethical hacking, active system defense, and modern AI security.
+                        </p>
+
+                        <div class="card-header" style="color: var(--blue);">👥 LEADERSHIP</div>
+                        <ul style="list-style: none; font-size: 0.95rem; line-height: 1.8;">
+                            <li><strong>Khoi Duong</strong> — Club President<br>
+                                <span style="font-family: 'Fira Code', monospace; color: var(--text-muted); font-size: 0.85rem;">mduong@student.sfbu.edu</span>
+                            </li>
+                            <li style="margin-top: 10px;"><strong>Joed Prudente</strong> — Faculty Advisor<br>
+                                <span style="font-family: 'Fira Code', monospace; color: var(--text-muted); font-size: 0.85rem;">joed.prudente@sfbu.edu</span>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div class="card red-accent">
+                        <div class="card-header" style="color: var(--red);">🔓 THE TEASER POSTERS DECODED</div>
+                        <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 12px;">Did you catch the hidden sequences on campus flyers?</p>
+
+                        <div style="margin-bottom: 14px;">
+                            <span style="font-family: 'Fira Code', monospace; font-size: 0.8rem; color: var(--amber); font-weight: bold;">HEXADECIMAL CIPHER:</span>
+                            <div class="code-box">42 61 79 53 65 63 20 69 73 20 68 65 72 65</div>
+                            <div style="font-family: 'Fira Code', monospace; color: var(--green); font-size: 0.85rem; font-weight: bold;">➔ "BaySec is here"</div>
+                        </div>
+
+                        <div>
+                            <span style="font-family: 'Fira Code', monospace; font-size: 0.8rem; color: var(--amber); font-weight: bold;">ROT-13 CIPHER:</span>
+                            <div class="code-box">Onlfrp vf urer</div>
+                            <div style="font-family: 'Fira Code', monospace; color: var(--green); font-size: 0.85rem; font-weight: bold;">➔ "BaySec is here"</div>
+                        </div>
+
+                        <div style="margin-top: 12px; font-size: 0.85rem; color: var(--cyan); font-style: italic;">
+                            ✓ Both trails converged. You're in the right place.
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ================= SLIDE 3 ================= -->
+            <section class="slide" data-slide="3">
+                <div class="slide-header">
+                    <span class="slide-tag">CURRICULUM TRACKS</span>
+                    <h2 class="slide-title">Choose Your Path (Or Explore All Three)</h2>
+                    <p class="slide-subtitle">Multi-track security training built for real-world impact.</p>
+                </div>
+
+                <div class="grid-3">
+                    <div class="card cyan-accent">
+                        <div class="card-header" style="color: var(--cyan);">BLUE TEAM</div>
+                        <div class="card-title">Active Defense</div>
+                        <div class="card-body">
+                            <ul>
+                                <li>Threat detection & incident triage</li>
+                                <li>Network traffic analysis (Wireshark)</li>
+                                <li>SIEM monitoring & defensive posture</li>
+                                <li>Endpoint telemetry & log forensics</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="card red-accent">
+                        <div class="card-header" style="color: var(--red);">RED TEAM</div>
+                        <div class="card-title">Offensive Security</div>
+                        <div class="card-body">
+                            <ul>
+                                <li>Web app security & OWASP Top 10</li>
+                                <li>Ethical exploitation & pen testing</li>
+                                <li>Jeopardy-style CTF competitions</li>
+                                <li>Reverse engineering & payload crafting</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="card purple-accent">
+                        <div class="card-header" style="color: var(--purple);">EMERGING TECH</div>
+                        <div class="card-title">AI Security</div>
+                        <div class="card-body">
+                            <ul>
+                                <li>LLM red-teaming & prompt injection</li>
+                                <li>Synthetic media & deepfake detection</li>
+                                <li>Securing agentic AI workflows</li>
+                                <li>Adversarial ML defenses</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="callout-banner">
+                    ⚡ Zero prior experience required. You do not need to lock yourself into a single path.
+                </div>
+            </section>
+
+            <!-- ================= SLIDE 4 ================= -->
+            <section class="slide" data-slide="4">
+                <div class="slide-header">
+                    <span class="slide-tag">SEMESTER ROADMAP</span>
+                    <h2 class="slide-title">What We Are Building This Semester</h2>
+                    <p class="slide-subtitle">A progressive progression from fundamental tool mastery to campus-scale operations.</p>
+                </div>
+
+                <div class="grid-3">
+                    <div class="card cyan-accent">
+                        <div class="card-header" style="color: var(--cyan);">PHASE 01</div>
+                        <div class="card-title">Hands-on Weekly Labs</div>
+                        <div class="card-body">
+                            Guided interactive sessions covering Linux fundamentals, Burp Suite proxy intercept, packet captures, and exploit isolation in sandbox environments.
+                        </div>
+                    </div>
+
+                    <div class="card amber-accent">
+                        <div class="card-header" style="color: var(--amber);">PHASE 02</div>
+                        <div class="card-title">Campus Defense Initiative</div>
+                        <div class="card-body">
+                            Security Open House featuring phishing awareness campaigns, password auditing clinics, and live social engineering defensive demonstrations.
+                        </div>
+                    </div>
+
+                    <div class="card green-accent">
+                        <div class="card-header" style="color: var(--green);">PHASE 03</div>
+                        <div class="card-title">BaySec CTF 2026</div>
+                        <div class="card-body">
+                            Flagship 24-hour campus Capture-The-Flag competition with beginner tracks, jeopardy challenges, real-time scoreboards, and sponsor prizes.
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ================= SLIDE 5 ================= -->
+            <section class="slide" data-slide="5">
+                <div class="slide-header">
+                    <span class="slide-tag">SKILL ACCELERATION</span>
+                    <h2 class="slide-title">Your Free Security Sandbox</h2>
+                    <p class="slide-subtitle">No paid licenses or subscriptions required to build formidable muscle memory.</p>
+                </div>
+
+                <div class="grid-3">
+                    <div class="card red-accent">
+                        <div class="card-header" style="color: var(--red);">WEB & CTF ROOMS</div>
+                        <div class="card-title">TryHackMe (Free Tier)</div>
+                        <div class="card-body">
+                            Browser-accessible security rooms and guided capture-the-flag paths for solo practice. Perfect for learning web attack basics and networking fundamentals without local VM overhead.
+                        </div>
+                    </div>
+
+                    <div class="card green-accent">
+                        <div class="card-header" style="color: var(--green);">LINUX MASTERY</div>
+                        <div class="card-title">OverTheWire (Bandit)</div>
+                        <div class="card-body">
+                            Gamified, interactive SSH challenge rooms to master Linux command-line essentials. Levels force you to dig through permissions, pipes, hex dumps, and shell redirection.
+                        </div>
+                    </div>
+
+                    <div class="card cyan-accent">
+                        <div class="card-header" style="color: var(--cyan);">SWISS ARMY KNIFE</div>
+                        <div class="card-title">CyberChef</div>
+                        <div class="card-body">
+                            The browser-based utility by GCHQ for decoding ciphers, Base64 strings, calculating hashes, and unpacking obfuscated malware payloads with simple drag-and-drop operations.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="callout-banner">
+                    💡 SFBU provides the lab space; these free platforms give you unlimited sandbox reps outside meetings.
+                </div>
+            </section>
+
+            <!-- ================= SLIDE 6 ================= -->
+            <section class="slide" data-slide="6">
+                <div class="slide-header">
+                    <span class="slide-tag red">LIVE HANDS-ON CTF</span>
+                    <h2 class="slide-title">Challenge 0x01 — The Leaked Credential</h2>
+                    <p class="slide-subtitle">Put theory into practice right now on our live test gateway.</p>
+                </div>
+
+                <div class="grid-2">
+                    <div class="terminal-window">
+                        <div style="color: var(--red); font-weight: bold; margin-bottom: 6px;">[!] INCIDENT SCENARIO:</div>
+                        <p style="color: #cbd5e1; font-size: 0.9rem; margin-bottom: 16px;">
+                            An unauthorized operator left their credentials cached in plain sight on our public test gateway.
+                        </p>
+
+                        <div style="color: var(--cyan); font-weight: bold; margin-bottom: 6px;">[*] OBJECTIVE:</div>
+                        <p style="color: #cbd5e1; font-size: 0.9rem; margin-bottom: 16px;">
+                            Inspect the target surface, extract the hidden string, and decode the payload.
+                        </p>
+
+                        <div style="color: var(--green); font-weight: bold; margin-bottom: 6px;">[#] FLAG FORMAT:</div>
+                        <div class="code-box" style="font-size: 1.1rem; font-weight: bold;">sfbu{...}</div>
+
+                        <div style="margin-top: 12px; font-size: 0.82rem; color: var(--blue);">
+                            TARGET GATEWAY: <a href="index.html" target="_blank" style="color: var(--cyan); text-decoration: underline;">tinyurl.com/baysec-portal</a>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; flex-direction: column; gap: 16px; justify-content: center; align-items: center;">
+                        <div class="timer-widget" style="width: 100%; max-width: 320px;">
+                            <div style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px;">Time Remaining</div>
+                            <div class="timer-display" id="challengeTimer">05:00</div>
+                            <div class="timer-controls">
+                                <button class="timer-btn" onclick="startTimer()">Start</button>
+                                <button class="timer-btn" onclick="pauseTimer()">Pause</button>
+                                <button class="timer-btn" onclick="resetTimer()">Reset</button>
+                            </div>
+                        </div>
+
+                        <div class="slide-qr-wrapper" style="width: 100%; max-width: 320px;">
+                            <img src="gen_assets/qr_challenge.png" alt="Portal Challenge QR" style="width: 130px; height: 130px;" />
+                            <span style="color: var(--cyan);">Scan to Launch Challenge</span>
+                            <span style="font-size: 0.75rem; color: var(--text-muted);">or visit tinyurl.com/baysec-portal</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ================= SLIDE 7 ================= -->
+            <section class="slide" data-slide="7">
+                <div class="slide-header">
+                    <span class="slide-tag">DEBRIEF & WALKTHROUGH</span>
+                    <h2 class="slide-title">0x01 Solution: Client-Side Exposure</h2>
+                    <p class="slide-subtitle">Analyzing how client-side data leaks compromise authentication systems.</p>
+                </div>
+
+                <div class="grid-2">
+                    <div class="card cyan-accent">
+                        <div class="card-header" style="color: var(--cyan);">STEP 1: INSPECT THE DOM</div>
+                        <ul style="list-style: none; font-size: 0.95rem; line-height: 1.6;">
+                            <li>Press <kbd style="background: #000; padding: 2px 6px; border-radius: 4px; border: 1px solid #334155;">F12</kbd> or Right-Click ➔ <strong>Inspect Element</strong></li>
+                            <li style="margin-top: 10px;">Check comments embedded directly inside the <code>&lt;body&gt;</code>:</li>
+                        </ul>
+                        <div class="code-box" style="margin-top: 12px;">
+&lt;!-- The flag is here:<br>
+c2ZidXt3M2xjMG0zX3QwX2I0eXMzY18yMDI2fQ== --&gt;
+                        </div>
+                        <div style="font-size: 0.85rem; color: var(--text-muted); font-style: italic; margin-top: 8px;">
+                            Notice the trailing <code>==</code> padding — the trademark tell of Base64 encoding.
+                        </div>
+                    </div>
+
+                    <div class="card green-accent">
+                        <div class="card-header" style="color: var(--green);">STEP 2: DECODE BASE64</div>
+                        <p style="font-size: 0.85rem; color: var(--amber); font-weight: bold; margin-bottom: 4px;">METHOD A: TERMINAL PIPELINE</p>
+                        <div class="code-box" style="color: #fff;">
+echo "c2ZidXt3M2xjMG0zX3QwX2I0eXMzY18yMDI2fQ==" | base64 -d
+                        </div>
+
+                        <p style="font-size: 0.85rem; color: var(--amber); font-weight: bold; margin: 10px 0 4px;">METHOD B: CYBERCHEF</p>
+                        <p style="font-size: 0.9rem; color: var(--text-muted);">Paste into CyberChef ➔ Add recipe <strong>"From Base64"</strong></p>
+
+                        <div style="margin-top: 14px; padding: 10px; background: rgba(74, 222, 128, 0.1); border: 1px solid var(--green); border-radius: 6px;">
+                            <div style="font-size: 0.75rem; color: var(--green); font-weight: bold;">FLAG RECOVERED:</div>
+                            <div style="font-family: 'Fira Code', monospace; font-size: 1.05rem; font-weight: bold; color: #fff;">sfbu{w3lc0m3_t0_b4ys3c_2026}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="callout-banner alert">
+                    ⚠️ KEY TAKEAWAY: Never store secrets, comments, or sensitive auth logic inside client-rendered markup. Base64 is encoding, not encryption.
+                </div>
+            </section>
+
+            <!-- ================= SLIDE 8 ================= -->
+            <section class="slide" data-slide="8">
+                <div class="slide-header">
+                    <span class="slide-tag">LOOKING AHEAD</span>
+                    <h2 class="slide-title">Get Connected & Next Steps</h2>
+                    <p class="slide-subtitle">Join our community channels to lock in your spot for next week's session.</p>
+                </div>
+
+                <div class="grid-2">
+                    <div class="card cyan-accent">
+                        <div class="card-header" style="color: var(--cyan);">🚀 NEXT WEEK: LAB 01</div>
+                        <div style="font-size: 1.25rem; font-weight: 700; color: #fff; margin-bottom: 12px;">
+                            Linux CLI Essentials & Wireshark Traffic Analysis
+                        </div>
+
+                        <div class="card-header" style="color: var(--blue); margin-top: 8px;">📅 MEETING SCHEDULE</div>
+                        <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 12px;">
+                            Weekly 60-Minute Sessions (Final weekday/time confirmed via WhatsApp & Email).
+                        </p>
+
+                        <div class="card-header" style="color: var(--amber);">⚡ ACTION ITEM</div>
+                        <p style="color: var(--text-main); font-size: 0.92rem; font-weight: 600; margin-bottom: 14px;">
+                            Make sure you are in the WhatsApp Community for room announcements!
+                        </p>
+
+                        <div class="card-header" style="color: var(--green);">📫 CONTACTS</div>
+                        <div style="font-size: 0.9rem; line-height: 1.6;">
+                            <div>Khoi Duong (President) — <code style="color: var(--cyan);">mduong@student.sfbu.edu</code></div>
+                            <div>Joed Prudente (Advisor) — <code style="color: var(--cyan);">joed.prudente@sfbu.edu</code></div>
+                        </div>
+                    </div>
+
+                    <div class="card green-accent" style="align-items: center; justify-content: center; text-align: center;">
+                        <div class="card-header" style="color: var(--green); margin-bottom: 12px;">JOIN THE COMMUNITY</div>
+                        <img src="../assets/qr.png" alt="WhatsApp QR" style="width: 150px; height: 150px; background: #fff; padding: 6px; border-radius: 8px; box-shadow: 0 0 20px rgba(74, 222, 128, 0.2);" />
+                        <h3 style="font-size: 2rem; margin: 16px 0 6px;">QUESTIONS?</h3>
+                        <p style="color: var(--text-muted); font-size: 0.95rem; max-width: 320px;">
+                            The floor is now open for Q&A, setup help, or just chatting security.
+                        </p>
+                    </div>
+                </div>
+            </section>
+
+        </div>
+    </main>
+
+    <!-- Collapsible Speaker Notes Drawer -->
+    <aside class="notes-panel" id="notesPanel">
+        <div class="notes-header">
+            <span>🎙️ Speaker Notes (Presenter View)</span>
+            <span id="notesSlideNumber">Slide 1 of 8</span>
+        </div>
+        <p class="notes-content" id="notesContent">
+            Loading speaker notes...
+        </p>
+    </aside>
+
+    <script>
+        const speakerNotes = {
+            1: "Welcome everyone to the official kickoff of BaySec @ SFBU! While everyone gets seated, take a moment to scan the QR codes on screen to mark your attendance and get plugged into our official WhatsApp group. That’s where we’ll drop lab resources, room updates, and CTF announcements.",
+            2: "If you saw our flyers around campus, you might have tackled the ciphers. Both the hexadecimal sequence and the ROT-13 text translated to 'BaySec is here.' Today, we’re officially here. Our goal is simple: take the concepts you study in class and apply them directly to live defense, penetration testing, and security tooling.",
+            3: "You don’t have to pick just one discipline. Whether you want to learn how attackers break into web apps, how SOC analysts hunt threats in network logs, or how prompt injection cracks AI systems, you can move between tracks based on what excites you.",
+            4: "Every session we host is designed to be hands-on. Instead of dry lectures, we run live walkthroughs, simulate defenses, and build practical skills. Later this term, we’ll host a campus-wide Security Open House and cap it off with our own BaySec CTF.",
+            5: "Security is a rep-based craft. You don’t need expensive certifications or paid subscriptions to start. TryHackMe's free tier, OverTheWire Bandit, and CyberChef are all you need to build muscle memory right now.",
+            6: "Let's put this into practice immediately. Pull out your laptop or phone and go to the URL on screen. An operator left an authorization token lingering inside this page. Your mission is to find it and extract the flag. You have 5 minutes—go!",
+            7: "Great job to everyone who caught that! The core flaw here is trusting the client side. If it ships to the user's browser—even inside an HTML comment—it’s public knowledge. Base64 is encoding, not encryption.",
+            8: "Next week, we kick off Lab 01 with Linux CLI survival skills and packet sniffing in Wireshark. Watch WhatsApp for the locked-in room and time slot. Thank you for coming out, and let’s open up the floor for any questions!"
+        };
+
+        let currentSlide = 1;
+        const totalSlides = 8;
+
+        function updateSlideUI() {
+            document.querySelectorAll('.slide').forEach(slide => {
+                slide.classList.remove('active');
+            });
+            const activeSlide = document.querySelector(`.slide[data-slide="${currentSlide}"]`);
+            if (activeSlide) {
+                activeSlide.classList.add('active');
+            }
+            document.getElementById('slideCounter').innerText = `${currentSlide} / ${totalSlides}`;
+            document.getElementById('notesSlideNumber').innerText = `Slide ${currentSlide} of ${totalSlides}`;
+            document.getElementById('notesContent').innerText = speakerNotes[currentSlide] || "No notes for this slide.";
+        }
+
+        function nextSlide() {
+            if (currentSlide < totalSlides) {
+                currentSlide++;
+                updateSlideUI();
+            }
+        }
+
+        function prevSlide() {
+            if (currentSlide > 1) {
+                currentSlide--;
+                updateSlideUI();
+            }
+        }
+
+        function toggleNotes() {
+            const panel = document.getElementById('notesPanel');
+            panel.classList.toggle('visible');
+            const btn = document.getElementById('notesBtn');
+            if (panel.classList.contains('visible')) {
+                btn.style.borderColor = 'var(--cyan)';
+                btn.style.color = 'var(--cyan)';
+            } else {
+                btn.style.borderColor = '';
+                btn.style.color = '';
+            }
+        }
+
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => {
+                    alert(`Error attempting fullscreen: ${err.message}`);
+                });
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                }
+            }
+        }
+
+        // Keyboard navigation
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') {
+                nextSlide();
+            } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+                prevSlide();
+            } else if (e.key.toLowerCase() === 'n') {
+                toggleNotes();
+            } else if (e.key.toLowerCase() === 'f') {
+                toggleFullscreen();
+            }
+        });
+
+        // 5-Minute Challenge Countdown Timer
+        let timerSeconds = 300;
+        let timerInterval = null;
+
+        function renderTimer() {
+            const mins = Math.floor(timerSeconds / 60).toString().padStart(2, '0');
+            const secs = (timerSeconds % 60).toString().padStart(2, '0');
+            document.getElementById('challengeTimer').innerText = `${mins}:${secs}`;
+        }
+
+        function startTimer() {
+            if (timerInterval) return;
+            timerInterval = setInterval(() => {
+                if (timerSeconds > 0) {
+                    timerSeconds--;
+                    renderTimer();
+                } else {
+                    clearInterval(timerInterval);
+                    timerInterval = null;
+                    alert("Time's up for Challenge 0x01!");
+                }
+            }, 1000);
+        }
+
+        function pauseTimer() {
+            clearInterval(timerInterval);
+            timerInterval = null;
+        }
+
+        function resetTimer() {
+            pauseTimer();
+            timerSeconds = 300;
+            renderTimer();
+        }
+
+        // Initial setup
+        updateSlideUI();
+    </script>
+</body>
+
+</html>
