@@ -371,6 +371,24 @@
         .sim-banner strong {
             color: #fbbf24;
         }
+
+        .officer-banner {
+            background: linear-gradient(90deg, rgba(168, 85, 247, 0.95), rgba(99, 102, 241, 0.95));
+            border: 1px solid #c084fc;
+            color: #ffffff;
+            padding: 10px 16px;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 0.82rem;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 16px;
+            box-shadow: 0 4px 15px rgba(168, 85, 247, 0.35);
+            animation: fadeIn 0.3s ease;
+        }
     </style>
 </head>
 
@@ -380,6 +398,12 @@
     <div id="simBanner" class="sim-banner" style="display: none;">
         <span>⚠️</span>
         <span><strong>[STAGING / SIMULATION MODE ACTIVE]</strong> — Sandbox Check-In</span>
+    </div>
+
+    <!-- Officer Preview Floating Indicator -->
+    <div id="officerBanner" class="officer-banner" style="display: none;">
+        <span>🛠️</span>
+        <span><strong>[OFFICER PREVIEW MODE: ALL CHALLENGES UNLOCKED]</strong></span>
     </div>
 
     <main class="checkin-card">
@@ -434,7 +458,10 @@
 
         <footer class="security-footer">
             <span>🛡️ Anti-Spoofing Protected</span>
-            <a href="leaderboard.html" target="_blank">View Leaderboard ➔</a>
+            <div style="display: flex; gap: 12px; align-items: center;">
+                <a href="leaderboard.html" title="Claim or update your hacker alias via email verification">✏️ Edit Handle</a>
+                <a href="leaderboard.html" target="_blank">View Leaderboard ➔</a>
+            </div>
         </footer>
     </main>
 
@@ -445,13 +472,13 @@
         // Google Apps Script Web App URL
         const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzQO2sZyXWsUtTgpHzbGy5MLTyV-0-kQlnqddTG3SjwDcOMKsjrA7p5kwBjc_tJ7do_Cg/exec";
 
-        // Active session context dynamically resolved from Google Sheet Admin_Config
-        let activeSession = {
+        // State tracking
+        const activeSession = {
             isOpen: false,
             activeWeek: null
         };
 
-        // If URL contains pre-filled handle (e.g. from saved bookmark / query parameter)
+        // Autofill from URL params if present (e.g. ?handle=0xViper)
         const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.get('handle')) {
             document.getElementById('handleInput').value = urlParams.get('handle');
@@ -473,8 +500,14 @@
             weekLabel.innerText = "CONNECTING...";
             pulseDot.className = "pulse-dot loading";
 
+            const urlParams = new URLSearchParams(window.location.search);
+            const previewKey = urlParams.get('preview_key') || localStorage.getItem('baysec_officer_key') || '';
+            if (urlParams.get('preview_key')) {
+                localStorage.setItem('baysec_officer_key', urlParams.get('preview_key'));
+            }
+
             try {
-                const response = await fetch(`${APPS_SCRIPT_URL}?action=get_active_session`);
+                const response = await fetch(`${APPS_SCRIPT_URL}?action=get_active_session${previewKey ? `&preview_key=${encodeURIComponent(previewKey)}` : ''}`);
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status} from authentication server`);
                 }
@@ -484,10 +517,19 @@
 
                 // Toggle Staging / Simulation Banner
                 const simBanner = document.getElementById('simBanner');
-                if (data.simMode) {
-                    if (simBanner) simBanner.style.display = "flex";
-                } else {
-                    if (simBanner) simBanner.style.display = "none";
+                if (data.simMode && simBanner) {
+                    simBanner.style.display = "flex";
+                } else if (simBanner) {
+                    simBanner.style.display = "none";
+                }
+
+                // Toggle Officer Banner
+                const isOfficer = (data.isOfficer || previewKey === "baysec_officer_2026");
+                const officerBanner = document.getElementById('officerBanner');
+                if (isOfficer && officerBanner) {
+                    officerBanner.style.display = "flex";
+                } else if (officerBanner) {
+                    officerBanner.style.display = "none";
                 }
 
                 if (isOpen && data.activeWeek) {

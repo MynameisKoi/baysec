@@ -559,6 +559,166 @@
             letter-spacing: 0.5px;
         }
 
+        .officer-banner {
+            background: linear-gradient(90deg, rgba(168, 85, 247, 0.95), rgba(99, 102, 241, 0.95));
+            border-bottom: 1px solid #c084fc;
+            color: #ffffff;
+            padding: 10px 16px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            box-shadow: 0 4px 20px rgba(168, 85, 247, 0.35);
+            animation: fadeIn 0.3s ease;
+        }
+
+        .nav-btn-secondary {
+            background: rgba(56, 189, 248, 0.1);
+            color: #38bdf8;
+            border: 1px solid rgba(56, 189, 248, 0.3);
+            padding: 8px 14px;
+            border-radius: 6px;
+            font-family: inherit;
+            font-size: 0.82rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .nav-btn-secondary:hover {
+            background: rgba(56, 189, 248, 0.2);
+            border-color: #38bdf8;
+            color: #ffffff;
+        }
+
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(11, 15, 25, 0.85);
+            backdrop-filter: blur(8px);
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal-box {
+            background: #0f172a;
+            border: 1px solid #334155;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.7), 0 0 30px rgba(56, 189, 248, 0.15);
+            border-radius: 12px;
+            max-width: 480px;
+            width: 100%;
+            padding: 28px;
+            animation: slideUp 0.3s ease;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #1e293b;
+            padding-bottom: 14px;
+        }
+
+        .modal-close-btn {
+            background: transparent;
+            border: none;
+            color: #94a3b8;
+            font-size: 1.5rem;
+            line-height: 1;
+            cursor: pointer;
+            padding: 0;
+            transition: color 0.2s;
+        }
+        .modal-close-btn:hover {
+            color: #f8fafc;
+        }
+
+        .modal-input {
+            width: 100%;
+            background: #1e293b;
+            border: 1px solid #334155;
+            color: #ffffff;
+            font-family: inherit;
+            padding: 12px 14px;
+            border-radius: 6px;
+            font-size: 0.95rem;
+            box-sizing: border-box;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .modal-input:focus {
+            outline: none;
+            border-color: #38bdf8;
+            box-shadow: 0 0 10px rgba(56, 189, 248, 0.25);
+        }
+
+        .modal-input.otp-code {
+            letter-spacing: 6px;
+            font-size: 1.3rem;
+            text-align: center;
+            font-weight: bold;
+            color: #00f0ff;
+        }
+
+        .modal-btn-primary {
+            background: linear-gradient(135deg, #38bdf8, #0284c7);
+            color: #0b0f19;
+            font-weight: 700;
+            font-family: inherit;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            width: 100%;
+            transition: all 0.2s;
+            font-size: 0.9rem;
+        }
+        .modal-btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 0 15px rgba(56, 189, 248, 0.4);
+        }
+
+        .modal-btn-secondary {
+            background: transparent;
+            border: 1px solid #475569;
+            color: #94a3b8;
+            font-weight: 600;
+            font-family: inherit;
+            padding: 12px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.9rem;
+        }
+        .modal-btn-secondary:hover {
+            border-color: #94a3b8;
+            color: #ffffff;
+        }
+
+        .officer-footer-btn {
+            background: transparent;
+            border: 1px dashed #64748b;
+            color: #64748b;
+            font-family: inherit;
+            font-size: 0.75rem;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .officer-footer-btn:hover {
+            border-color: #c084fc;
+            color: #c084fc;
+        }
+
         @media (max-width: 820px) {
             .podium {
                 grid-template-columns: 1fr;
@@ -594,15 +754,26 @@
             <a href="leaderboard.html" class="nav-link active">Leaderboard</a>
         </div>
 
-        <a href="checkin.html" class="nav-btn-action">
-            ⚡ Quick Check-In
-        </a>
+        <div style="display: flex; gap: 8px; align-items: center;">
+            <button onclick="openAliasModal()" class="nav-btn-secondary" title="Claim or edit your custom hacker handle via Email OTP">
+                ✏️ Claim / Edit Alias
+            </button>
+            <a href="checkin.html" class="nav-btn-action">
+                ⚡ Quick Check-In
+            </a>
+        </div>
     </nav>
 
     <!-- Staging / Simulation Warning Banner -->
     <div id="simBanner" class="sim-banner" style="display: none;">
         <span>⚠️</span>
         <span><strong>[STAGING / SIMULATION MODE ACTIVE]</strong> — You are viewing sandbox test standings. Live production data is isolated.</span>
+    </div>
+
+    <!-- Officer Preview Floating Indicator -->
+    <div id="officerBanner" class="officer-banner" style="display: none;">
+        <span>🛠️</span>
+        <span><strong>[OFFICER PREVIEW MODE: ALL CHALLENGES UNLOCKED]</strong></span>
     </div>
 
     <!-- Main Container -->
@@ -677,10 +848,80 @@
 
     </main>
 
+    <!-- Claim / Edit Alias Modal -->
+    <div id="aliasModal" class="modal-overlay" style="display: none;">
+        <div class="modal-box">
+            <div class="modal-header">
+                <div>
+                    <h3 style="margin: 0; color: #38bdf8; font-size: 1.25rem;">✏️ Claim / Edit Hacker Alias</h3>
+                    <p style="margin: 4px 0 0; color: #94a3b8; font-size: 0.82rem;">Verify your SFBU student email via 4-digit code to set your permanent handle.</p>
+                </div>
+                <button type="button" onclick="closeAliasModal()" class="modal-close-btn">&times;</button>
+            </div>
+
+            <!-- Step 1: Request OTP -->
+            <div id="aliasStep1">
+                <div style="margin-bottom: 16px;">
+                    <label style="display: block; color: #cbd5e1; font-size: 0.85rem; margin-bottom: 6px;">SFBU Student Email</label>
+                    <input type="email" id="aliasEmailInput" class="modal-input" placeholder="e.g. student@student.sfbu.edu" />
+                </div>
+                <button type="button" onclick="requestOtp()" id="sendOtpBtn" class="modal-btn-primary">SEND VERIFICATION CODE</button>
+                <div id="aliasStep1Msg" style="margin-top: 12px; font-size: 0.85rem;"></div>
+            </div>
+
+            <!-- Step 2: Verify & Claim -->
+            <div id="aliasStep2" style="display: none;">
+                <p style="color: #4ade80; font-size: 0.85rem; margin-bottom: 14px;" id="otpSentNotice">
+                    Verification code dispatched to your inbox! Check your email and enter below.
+                </p>
+                <div style="margin-bottom: 14px;">
+                    <label style="display: block; color: #cbd5e1; font-size: 0.85rem; margin-bottom: 6px;">4-Digit Verification Code (OTP)</label>
+                    <input type="text" id="otpCodeInput" class="modal-input otp-code" placeholder="1234" maxlength="6" autocomplete="off" />
+                </div>
+                <div style="margin-bottom: 16px;">
+                    <label style="display: block; color: #cbd5e1; font-size: 0.85rem; margin-bottom: 6px;">Desired Hacker Handle / Alias</label>
+                    <input type="text" id="newAliasInput" class="modal-input" placeholder="e.g. 0xViper, CyberSamurai" maxlength="20" autocomplete="username" />
+                    <span style="display: block; font-size: 0.75rem; color: #64748b; margin-top: 4px;">3-20 characters: letters, numbers, underscores, and hyphens.</span>
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <button type="button" onclick="backToStep1()" class="modal-btn-secondary">Back</button>
+                    <button type="button" onclick="submitUpdateAlias()" id="confirmAliasBtn" class="modal-btn-primary" style="flex: 1;">CONFIRM & CLAIM ALIAS</button>
+                </div>
+                <div id="aliasStep2Msg" style="margin-top: 12px; font-size: 0.85rem;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Officer Preview Login Modal -->
+    <div id="officerModal" class="modal-overlay" style="display: none;">
+        <div class="modal-box">
+            <div class="modal-header">
+                <div>
+                    <h3 style="margin: 0; color: #c084fc; font-size: 1.25rem;">🛠️ Officer Preview / Testing Login</h3>
+                    <p style="margin: 4px 0 0; color: #94a3b8; font-size: 0.82rem;">Unlock upcoming challenges (Week 5+) and enable bypass testing mode.</p>
+                </div>
+                <button type="button" onclick="closeOfficerModal()" class="modal-close-btn">&times;</button>
+            </div>
+            <div style="margin-bottom: 16px;">
+                <label style="display: block; color: #cbd5e1; font-size: 0.85rem; margin-bottom: 6px;">Officer Secret Token</label>
+                <input type="password" id="officerTokenInput" class="modal-input" placeholder="Enter officer preview key..." />
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <button type="button" onclick="clearOfficerToken()" class="modal-btn-secondary">Clear / Logout</button>
+                <button type="button" onclick="saveOfficerToken()" class="modal-btn-primary" style="background: linear-gradient(135deg, #a855f7, #6366f1); flex: 1;">ENABLE PREVIEW MODE</button>
+            </div>
+            <div id="officerModalMsg" style="margin-top: 12px; font-size: 0.85rem;"></div>
+        </div>
+    </div>
+
     <!-- Footer -->
     <footer>
-        BaySec @ SFBU • Built for the Fall 2026 Cybersecurity League • <a href="https://forms.gle/b5oD4hmCSG41ZcLp7"
-            target="_blank">Submit Weekly Check-In</a>
+        <div>
+            BaySec @ SFBU • Built for the Fall 2026 Cybersecurity League • <a href="checkin.html">Submit Weekly Check-In</a>
+        </div>
+        <div style="margin-top: 10px;">
+            <button type="button" onclick="openOfficerModal()" class="officer-footer-btn" id="officerFooterBtn">🛠️ Officer Preview Login</button>
+        </div>
     </footer>
 
     <!-- Script: Data Fetching & Rendering -->
@@ -741,12 +982,20 @@
         async function loadLeaderboardData() {
             const simBanner = document.getElementById('simBanner');
             const syncStatus = document.getElementById('syncStatus');
+            const officerBanner = document.getElementById('officerBanner');
+            const officerFooterBtn = document.getElementById('officerFooterBtn');
+
+            const urlParams = new URLSearchParams(window.location.search);
+            const previewKey = urlParams.get('preview_key') || localStorage.getItem('baysec_officer_key') || '';
+            if (urlParams.get('preview_key')) {
+                localStorage.setItem('baysec_officer_key', urlParams.get('preview_key'));
+            }
 
             // 1. Primary Sync: Live query to Google Apps Script API (supports sandbox / production routing)
             if (APPS_SCRIPT_URL && !APPS_SCRIPT_URL.includes("REPLACE_WITH_YOUR_DEPLOYED_SCRIPT_URL")) {
                 try {
                     if (syncStatus) syncStatus.innerText = "Syncing live with BaySec Engine...";
-                    const resp = await fetch(`${APPS_SCRIPT_URL}?action=get_leaderboard`);
+                    const resp = await fetch(`${APPS_SCRIPT_URL}?action=get_leaderboard${previewKey ? `&preview_key=${encodeURIComponent(previewKey)}` : ''}`);
                     if (resp.ok) {
                         const data = await resp.json();
 
@@ -757,6 +1006,16 @@
                         } else {
                             if (simBanner) simBanner.style.display = "none";
                             if (syncStatus) syncStatus.innerText = "Live Synced with Google Sheets";
+                        }
+
+                        // Toggle Officer Banner & Footer State
+                        const isOfficer = (data.isOfficer || previewKey === "baysec_officer_2026");
+                        if (isOfficer) {
+                            if (officerBanner) officerBanner.style.display = "flex";
+                            if (officerFooterBtn) officerFooterBtn.innerText = "🛠️ Officer Preview Active (Click to Logout)";
+                        } else {
+                            if (officerBanner) officerBanner.style.display = "none";
+                            if (officerFooterBtn) officerFooterBtn.innerText = "🛠️ Officer Preview Login";
                         }
 
                         if (data.leaderboard && data.leaderboard.length > 0) {
@@ -900,6 +1159,168 @@
         function renderAll() {
             renderPodium(currentMembers);
             renderTable(currentMembers);
+        }
+
+        /* ==========================================================================
+           SELF-SERVICE EMAIL OTP ALIAS CLAIMING LOGIC
+           ========================================================================== */
+        let aliasTargetEmail = "";
+
+        function openAliasModal() {
+            const savedEmail = localStorage.getItem("baysec_email") || "";
+            if (savedEmail) {
+                document.getElementById("aliasEmailInput").value = savedEmail;
+            }
+            backToStep1();
+            document.getElementById("aliasStep1Msg").innerHTML = "";
+            document.getElementById("aliasStep2Msg").innerHTML = "";
+            document.getElementById("aliasModal").style.display = "flex";
+        }
+
+        function closeAliasModal() {
+            document.getElementById("aliasModal").style.display = "none";
+        }
+
+        function backToStep1() {
+            document.getElementById("aliasStep1").style.display = "block";
+            document.getElementById("aliasStep2").style.display = "none";
+        }
+
+        async function requestOtp() {
+            const emailInput = document.getElementById("aliasEmailInput");
+            const btn = document.getElementById("sendOtpBtn");
+            const msg = document.getElementById("aliasStep1Msg");
+
+            const email = emailInput.value.trim().toLowerCase();
+            if (!email || !email.includes("@")) {
+                msg.style.color = "#f87171";
+                msg.innerText = "Please enter a valid SFBU student email address.";
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerText = "DISPATCHING CODE...";
+            msg.style.color = "#38bdf8";
+            msg.innerText = "Connecting to security gateway...";
+
+            try {
+                const resp = await fetch(`${APPS_SCRIPT_URL}?action=request_alias_otp&email=${encodeURIComponent(email)}`);
+                const res = await resp.json();
+
+                if (res.success) {
+                    aliasTargetEmail = email;
+                    localStorage.setItem("baysec_email", email);
+                    document.getElementById("otpSentNotice").innerText = res.message || `Code sent to ${email}! Check inbox & enter below:`;
+                    document.getElementById("aliasStep1").style.display = "none";
+                    document.getElementById("aliasStep2").style.display = "block";
+                    document.getElementById("otpCodeInput").focus();
+                } else {
+                    msg.style.color = "#f87171";
+                    msg.innerText = res.message || "Failed to dispatch verification code.";
+                }
+            } catch (err) {
+                msg.style.color = "#f87171";
+                msg.innerText = "Error contacting gateway: " + err.message;
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "SEND VERIFICATION CODE";
+            }
+        }
+
+        async function submitUpdateAlias() {
+            const otpInput = document.getElementById("otpCodeInput");
+            const aliasInput = document.getElementById("newAliasInput");
+            const btn = document.getElementById("confirmAliasBtn");
+            const msg = document.getElementById("aliasStep2Msg");
+
+            const otp = otpInput.value.trim();
+            const newAlias = aliasInput.value.trim();
+
+            if (!otp || otp.length < 4) {
+                msg.style.color = "#f87171";
+                msg.innerText = "Please enter the 4-digit verification code.";
+                return;
+            }
+
+            if (!newAlias || newAlias.length < 3 || newAlias.length > 20) {
+                msg.style.color = "#f87171";
+                msg.innerText = "Alias must be between 3 and 20 characters.";
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerText = "VERIFYING & CLAIMING...";
+            msg.style.color = "#38bdf8";
+            msg.innerText = "Updating identity registry...";
+
+            try {
+                const queryParams = new URLSearchParams({
+                    action: "update_alias",
+                    email: aliasTargetEmail,
+                    otp: otp,
+                    new_alias: newAlias
+                });
+
+                const resp = await fetch(`${APPS_SCRIPT_URL}?${queryParams.toString()}`);
+                const res = await resp.json();
+
+                if (res.success) {
+                    msg.style.color = "#4ade80";
+                    msg.innerText = res.message || "Identity confirmed! Handle updated.";
+                    localStorage.setItem("baysec_alias", newAlias);
+                    setTimeout(() => {
+                        closeAliasModal();
+                        loadLeaderboardData();
+                    }, 1200);
+                } else {
+                    msg.style.color = "#f87171";
+                    msg.innerText = res.message || "Could not claim alias.";
+                }
+            } catch (err) {
+                msg.style.color = "#f87171";
+                msg.innerText = "Error updating alias: " + err.message;
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "CONFIRM & CLAIM ALIAS";
+            }
+        }
+
+        /* ==========================================================================
+           OFFICER PREVIEW / BYPASS MODAL LOGIC
+           ========================================================================== */
+        function openOfficerModal() {
+            const currentKey = localStorage.getItem("baysec_officer_key") || "";
+            document.getElementById("officerTokenInput").value = currentKey;
+            document.getElementById("officerModalMsg").innerText = "";
+            document.getElementById("officerModal").style.display = "flex";
+        }
+
+        function closeOfficerModal() {
+            document.getElementById("officerModal").style.display = "none";
+        }
+
+        function saveOfficerToken() {
+            const key = document.getElementById("officerTokenInput").value.trim();
+            if (!key) {
+                document.getElementById("officerModalMsg").style.color = "#f87171";
+                document.getElementById("officerModalMsg").innerText = "Please enter an officer key.";
+                return;
+            }
+            localStorage.setItem("baysec_officer_key", key);
+            document.getElementById("officerModalMsg").style.color = "#4ade80";
+            document.getElementById("officerModalMsg").innerText = "Officer preview key saved! Reloading...";
+            setTimeout(() => {
+                window.location.search = `?preview_key=${encodeURIComponent(key)}`;
+            }, 600);
+        }
+
+        function clearOfficerToken() {
+            localStorage.removeItem("baysec_officer_key");
+            document.getElementById("officerModalMsg").style.color = "#94a3b8";
+            document.getElementById("officerModalMsg").innerText = "Officer key removed. Reloading...";
+            setTimeout(() => {
+                window.location.href = window.location.pathname;
+            }, 600);
         }
 
         // Initialize on load

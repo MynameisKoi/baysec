@@ -479,6 +479,135 @@
             letter-spacing: 0.5px;
         }
 
+        .officer-banner {
+            background: linear-gradient(90deg, rgba(168, 85, 247, 0.95), rgba(99, 102, 241, 0.95));
+            border-bottom: 1px solid #c084fc;
+            color: #ffffff;
+            padding: 10px 16px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            box-shadow: 0 4px 20px rgba(168, 85, 247, 0.35);
+            animation: fadeIn 0.3s ease;
+        }
+
+        .challenge-gate-lock {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(11, 15, 25, 0.95);
+            backdrop-filter: blur(14px);
+            z-index: 99999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .lock-modal {
+            background: #0f172a;
+            border: 1px solid rgba(239, 68, 68, 0.4);
+            box-shadow: 0 0 50px rgba(239, 68, 68, 0.25), 0 20px 40px rgba(0, 0, 0, 0.8);
+            border-radius: 12px;
+            max-width: 520px;
+            width: 100%;
+            padding: 36px 28px;
+            text-align: center;
+            animation: slideUp 0.35s ease;
+        }
+
+        .lock-icon {
+            font-size: 3.2rem;
+            margin-bottom: 12px;
+        }
+
+        .lock-badge {
+            display: inline-block;
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid #ef4444;
+            color: #fca5a5;
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            padding: 4px 12px;
+            border-radius: 999px;
+            margin-bottom: 16px;
+        }
+
+        .lock-info-box {
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            padding: 14px;
+            margin: 20px 0;
+            text-align: left;
+            font-size: 0.88rem;
+            color: #cbd5e1;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .lock-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 24px;
+        }
+
+        .btn-lock-primary {
+            background: linear-gradient(135deg, #38bdf8, #0284c7);
+            color: #0b0f19;
+            font-weight: 700;
+            padding: 12px 20px;
+            border-radius: 6px;
+            text-decoration: none;
+            display: block;
+            transition: all 0.2s;
+        }
+        .btn-lock-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 15px rgba(56, 189, 248, 0.4);
+        }
+
+        .btn-lock-secondary {
+            background: transparent;
+            border: 1px solid #475569;
+            color: #94a3b8;
+            font-weight: 600;
+            padding: 10px 18px;
+            border-radius: 6px;
+            text-decoration: none;
+            display: block;
+            transition: all 0.2s;
+        }
+        .btn-lock-secondary:hover {
+            border-color: #94a3b8;
+            color: #f8fafc;
+        }
+
+        .btn-lock-officer {
+            background: transparent;
+            border: 1px dashed #a855f7;
+            color: #c084fc;
+            font-weight: 600;
+            padding: 10px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            width: 100%;
+            transition: all 0.2s;
+            font-family: inherit;
+        }
+        .btn-lock-officer:hover {
+            background: rgba(168, 85, 247, 0.15);
+            border-style: solid;
+        }
+
         @media (max-width: 900px) {
             .inspector-split {
                 grid-template-columns: 1fr;
@@ -496,6 +625,27 @@
 </head>
 
 <body>
+
+    <!-- Progressive Challenge Gating Lock Overlay -->
+    <div id="challengeGateLock" class="challenge-gate-lock" style="display: none;">
+        <div class="lock-modal">
+            <div class="lock-icon">🔒</div>
+            <div class="lock-badge">CLASSIFIED / SCHEDULED FOR WEEK 5</div>
+            <h2 style="font-size: 1.5rem; margin-bottom: 10px; color: #f8fafc;">Challenge 0x02 is Locked</h2>
+            <p style="color: #94a3b8; font-size: 0.9rem; line-height: 1.5;">
+                This challenge is scheduled to unlock during the <strong>Week 5 Meeting Session</strong>. Regular access is currently gated.
+            </p>
+            <div class="lock-info-box">
+                <div>📅 <strong>Session Release:</strong> Week 5 (Sep 14, 2026)</div>
+                <div>⚡ <strong>Past Challenges:</strong> Permanently solvable for full catch-up points!</div>
+            </div>
+            <div class="lock-actions">
+                <a href="../week4/" class="btn-lock-primary">Go to Challenge 0x01 (Week 4) ➔</a>
+                <a href="../leaderboard.html" class="btn-lock-secondary">View League Standings</a>
+                <button type="button" onclick="promptOfficerBypass()" class="btn-lock-officer">🛠️ Officer Preview Login</button>
+            </div>
+        </div>
+    </div>
 
     <!-- Top Navigation Bar -->
     <header class="gateway-header">
@@ -524,6 +674,12 @@
     <div id="simBanner" class="sim-banner" style="display: none;">
         <span>⚠️</span>
         <span><strong>[STAGING / SIMULATION MODE ACTIVE]</strong> — Sandbox mode is enabled. Submissions and points are isolated to staging tables.</span>
+    </div>
+
+    <!-- Officer Preview Floating Indicator -->
+    <div id="officerBanner" class="officer-banner" style="display: none;">
+        <span>🛠️</span>
+        <span><strong>[OFFICER PREVIEW MODE: ALL CHALLENGES UNLOCKED]</strong></span>
     </div>
 
     <!-- Briefing Card -->
@@ -598,9 +754,8 @@
         </p>
 
         <form class="submit-form" onsubmit="event.preventDefault(); verifyFlag();" style="display: flex; gap: 10px; flex-wrap: wrap;">
-            <input type="text" id="aliasInput" class="input-token" placeholder="Hacker Alias (e.g. 0xViper)" style="max-width: 200px;" autocomplete="username" required />
-            <input type="email" id="emailInput" class="input-token" placeholder="SFBU Student Email" style="max-width: 250px;" autocomplete="email" required />
-            <input type="text" id="flagInput" class="input-token" placeholder="Enter Flag sfbu{...} or Secret Token" autocomplete="off" style="flex: 1; min-width: 260px;" required />
+            <input type="email" id="emailInput" class="input-token" placeholder="SFBU Student Email" style="max-width: 320px; flex: 1;" autocomplete="email" required />
+            <input type="text" id="flagInput" class="input-token" placeholder="Enter Flag sfbu{...} or Secret Token" autocomplete="off" style="flex: 2; min-width: 260px;" required />
             <button type="submit" class="btn-submit" id="submitBtn">SUBMIT & CLAIM POINTS</button>
         </form>
 
@@ -881,48 +1036,74 @@
 
         const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzQO2sZyXWsUtTgpHzbGy5MLTyV-0-kQlnqddTG3SjwDcOMKsjrA7p5kwBjc_tJ7do_Cg/exec";
 
-        // Restore saved alias & email if available
-        const savedAlias = localStorage.getItem("baysec_alias");
+        // Restore saved email if available
         const savedEmail = localStorage.getItem("baysec_email");
-        if (savedAlias && document.getElementById("aliasInput")) {
-            document.getElementById("aliasInput").value = savedAlias;
-        }
         if (savedEmail && document.getElementById("emailInput")) {
             document.getElementById("emailInput").value = savedEmail;
         }
 
-        // Check for active Simulation Mode to show warning banner
-        async function checkSimMode() {
+        // Check active session, progressive gating, and officer preview mode
+        async function checkSessionAndGate() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const previewKey = urlParams.get('preview_key') || localStorage.getItem('baysec_officer_key') || '';
+            if (urlParams.get('preview_key')) {
+                localStorage.setItem('baysec_officer_key', urlParams.get('preview_key'));
+            }
+
             try {
-                const resp = await fetch(`${APPS_SCRIPT_URL}?action=get_active_session`);
+                const resp = await fetch(`${APPS_SCRIPT_URL}?action=get_active_session${previewKey ? `&preview_key=${encodeURIComponent(previewKey)}` : ''}`);
                 if (resp.ok) {
                     const data = await resp.json();
+                    
+                    // Sim Mode Banner
                     const simBanner = document.getElementById("simBanner");
                     if (data.simMode && simBanner) {
                         simBanner.style.display = "flex";
                     }
+
+                    // Officer Preview Banner
+                    const isOfficer = (data.isOfficer || previewKey === "baysec_officer_2026");
+                    const officerBanner = document.getElementById("officerBanner");
+                    if (isOfficer && officerBanner) {
+                        officerBanner.style.display = "flex";
+                    }
+
+                    // Progressive Gating: Challenge 0x02 is for Week 5
+                    const activeWeek = data.activeWeek || 4;
+                    const lockOverlay = document.getElementById("challengeGateLock");
+                    if (activeWeek < 5 && !isOfficer) {
+                        if (lockOverlay) lockOverlay.style.display = "flex";
+                    } else {
+                        if (lockOverlay) lockOverlay.style.display = "none";
+                    }
                 }
             } catch (err) {
-                // Ignore silent check errors
+                console.warn("Session check error:", err);
             }
         }
-        checkSimMode();
+        checkSessionAndGate();
+
+        function promptOfficerBypass() {
+            const key = prompt("Enter Officer Secret Token / Bypass Key (e.g. baysec_officer_2026):");
+            if (key) {
+                localStorage.setItem('baysec_officer_key', key.trim());
+                window.location.search = `?preview_key=${encodeURIComponent(key.trim())}`;
+            }
+        }
 
         async function verifyFlag() {
-            const aliasInput = document.getElementById("aliasInput");
             const emailInput = document.getElementById("emailInput");
             const flagInput = document.getElementById("flagInput");
             const status = document.getElementById("statusMsg");
             const logo = document.getElementById("brandLogo");
             const submitBtn = document.getElementById("submitBtn");
 
-            const handle = aliasInput ? aliasInput.value.trim() : "";
             const email = emailInput ? emailInput.value.trim().toLowerCase() : "";
             const input = flagInput ? flagInput.value.trim() : "";
 
-            if (!handle || !email) {
+            if (!email) {
                 status.className = "status-denied";
-                status.innerText = "Please enter both your Hacker Alias and SFBU Student Email.";
+                status.innerText = "Please enter your SFBU Student Email.";
                 return;
             }
 
@@ -932,8 +1113,9 @@
                 return;
             }
 
-            localStorage.setItem("baysec_alias", handle);
             localStorage.setItem("baysec_email", email);
+
+            const previewKey = localStorage.getItem('baysec_officer_key') || new URLSearchParams(window.location.search).get('preview_key') || '';
 
             submitBtn.disabled = true;
             submitBtn.innerText = "VERIFYING & CLAIMING...";
@@ -943,11 +1125,13 @@
                     action: "submit_flag",
                     challenge_id: "challenge_0x02",
                     week: 5,
-                    handle: handle,
                     email: email,
                     flag: input,
                     timestamp: new Date().toISOString()
                 });
+                if (previewKey) {
+                    queryParams.set("preview_key", previewKey);
+                }
 
                 const response = await fetch(`${APPS_SCRIPT_URL}?${queryParams.toString()}`);
                 if (!response.ok) {
@@ -956,7 +1140,16 @@
 
                 const result = await response.json();
 
-                if (result.alreadyClaimed || (result.message && result.message.includes("already claimed"))) {
+                if (result.isLocked) {
+                    status.className = "status-denied";
+                    status.innerHTML = `
+                        <div style="font-weight: bold; margin-bottom: 4px;">🔒 CHALLENGE GATED</div>
+                        <div style="font-size: 0.85rem; color: #fca5a5;">
+                            ${result.message}
+                        </div>
+                    `;
+                    logo.src = "../assets/baysec-red.png";
+                } else if (result.alreadyClaimed || (result.message && result.message.includes("already claimed"))) {
                     status.className = "status-easteregg";
                     status.innerHTML = `
                         <div style="font-weight: bold; margin-bottom: 4px;">FLAG VERIFIED (ALREADY CLAIMED)</div>
@@ -967,10 +1160,11 @@
                     logo.src = "../assets/baysec-blue.png";
                 } else if (result.success) {
                     logo.src = "../assets/baysec-blue.png";
+                    const creditedTo = result.handle ? ` credited to ${result.handle}` : "";
                     if (result.challengeId === "easter_egg_0x01") {
                         status.className = "status-easteregg";
                         status.innerHTML = `
-                            <div style="font-weight: bold; margin-bottom: 4px;">🌟 SECRET EASTER EGG UNLOCKED! (+${result.pointsAwarded || 50} Bonus Points)</div>
+                            <div style="font-weight: bold; margin-bottom: 4px;">🌟 SECRET EASTER EGG UNLOCKED! (+${result.pointsAwarded || 50} Bonus Points${creditedTo})</div>
                             <div style="font-size: 0.85rem; color: #fde68a;">
                                 ${result.message}
                             </div>
@@ -978,7 +1172,7 @@
                     } else if (result.solveTier === "FIRST_BLOOD") {
                         status.className = "status-granted";
                         status.innerHTML = `
-                            <div style="font-weight: bold; margin-bottom: 4px;">🩸 FIRST BLOOD CLAIMED! (+${result.pointsAwarded || 125} Points)</div>
+                            <div style="font-weight: bold; margin-bottom: 4px;">🩸 FIRST BLOOD CLAIMED! (+${result.pointsAwarded || 125} Points${creditedTo})</div>
                             <div style="font-size: 0.85rem; color: #bbf7d0;">
                                 ${result.message}
                             </div>
@@ -986,7 +1180,7 @@
                     } else if (result.solveTier === "FIRST_DAY") {
                         status.className = "status-granted";
                         status.innerHTML = `
-                            <div style="font-weight: bold; margin-bottom: 4px;">⚡ DAY-OF SOLVE BONUS! (+${result.pointsAwarded || 110} Points)</div>
+                            <div style="font-weight: bold; margin-bottom: 4px;">⚡ DAY-OF SOLVE BONUS! (+${result.pointsAwarded || 110} Points${creditedTo})</div>
                             <div style="font-size: 0.85rem; color: #bbf7d0;">
                                 ${result.message}
                             </div>
@@ -994,7 +1188,7 @@
                     } else {
                         status.className = "status-granted";
                         status.innerHTML = `
-                            <div style="font-weight: bold; margin-bottom: 4px;">ACCESS GRANTED! (+${result.pointsAwarded || 100} Points)</div>
+                            <div style="font-weight: bold; margin-bottom: 4px;">ACCESS GRANTED! (+${result.pointsAwarded || 100} Points${creditedTo})</div>
                             <div style="font-size: 0.85rem; color: #bbf7d0;">
                                 ${result.message}
                             </div>
@@ -1008,7 +1202,7 @@
             } catch (err) {
                 console.warn("Verification API error:", err);
                 status.className = "status-denied";
-                status.innerText = "Error contacting verification server. Please check your connection or contact an officer.";
+                status.innerText = "Error contacting verification server: " + err.message;
                 logo.src = "../assets/baysec-red.png";
             } finally {
                 submitBtn.disabled = false;

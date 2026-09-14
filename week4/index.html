@@ -286,6 +286,24 @@
         .sim-banner strong {
             color: #fbbf24;
         }
+
+        .officer-banner {
+            background: linear-gradient(90deg, rgba(168, 85, 247, 0.95), rgba(99, 102, 241, 0.95));
+            border: 1px solid #c084fc;
+            color: #ffffff;
+            padding: 10px 16px;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 0.82rem;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 16px;
+            box-shadow: 0 4px 15px rgba(168, 85, 247, 0.35);
+            animation: fadeIn 0.3s ease;
+        }
     </style>
 </head>
 
@@ -297,6 +315,12 @@
     <div id="simBanner" class="sim-banner" style="display: none;">
         <span>⚠️</span>
         <span><strong>[STAGING / SIMULATION MODE ACTIVE]</strong> — Sandbox Gateway</span>
+    </div>
+
+    <!-- Officer Preview Floating Indicator -->
+    <div id="officerBanner" class="officer-banner" style="display: none;">
+        <span>🛠️</span>
+        <span><strong>[OFFICER PREVIEW MODE: ALL CHALLENGES UNLOCKED]</strong></span>
     </div>
 
     <div class="terminal-card">
@@ -312,12 +336,6 @@
             client interface. Inspect the gateway to retrieve the token.</p>
 
         <form id="challengeForm" onsubmit="verifyFlag(event)">
-            <div class="form-group">
-                <label for="handleInput">Hacker Alias / Handle</label>
-                <input type="text" id="handleInput" class="input-box" placeholder="e.g. 0xViper or your alias"
-                    required autocomplete="username" />
-            </div>
-
             <div class="form-group">
                 <label for="emailInput">SFBU Student Email</label>
                 <input type="email" id="emailInput" class="input-box" placeholder="e.g. student@student.sfbu.edu"
@@ -344,20 +362,28 @@
     <script>
         const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzQO2sZyXWsUtTgpHzbGy5MLTyV-0-kQlnqddTG3SjwDcOMKsjrA7p5kwBjc_tJ7do_Cg/exec";
 
-        // Pre-fill saved handle / email and check environment
+        // Pre-fill saved email and check environment & officer preview status
         document.addEventListener("DOMContentLoaded", async () => {
-            const savedAlias = localStorage.getItem("baysec_alias") || localStorage.getItem("baysec_handle");
             const savedEmail = localStorage.getItem("baysec_email");
-            if (savedAlias) document.getElementById("handleInput").value = savedAlias;
             if (savedEmail) document.getElementById("emailInput").value = savedEmail;
 
+            const urlParams = new URLSearchParams(window.location.search);
+            const previewKey = urlParams.get('preview_key') || localStorage.getItem('baysec_officer_key') || '';
+            if (urlParams.get('preview_key')) {
+                localStorage.setItem('baysec_officer_key', urlParams.get('preview_key'));
+            }
+
             try {
-                const resp = await fetch(`${APPS_SCRIPT_URL}?action=status`);
+                const resp = await fetch(`${APPS_SCRIPT_URL}?action=status${previewKey ? `&preview_key=${encodeURIComponent(previewKey)}` : ''}`);
                 if (resp.ok) {
                     const data = await resp.json();
                     const simBanner = document.getElementById("simBanner");
                     if (data.simMode && simBanner) {
                         simBanner.style.display = "flex";
+                    }
+                    const officerBanner = document.getElementById("officerBanner");
+                    if ((data.isOfficer || previewKey === "baysec_officer_2026") && officerBanner) {
+                        officerBanner.style.display = "flex";
                     }
                 }
             } catch(e) {}
@@ -375,20 +401,18 @@
         async function verifyFlag(e) {
             if (e) e.preventDefault();
 
-            const handleInput = document.getElementById("handleInput");
             const emailInput = document.getElementById("emailInput");
             const flagInput = document.getElementById("flagInput");
             const submitBtn = document.getElementById("submitBtn");
             const status = document.getElementById("status-msg");
             const logo = document.getElementById("brandLogo");
 
-            const handle = handleInput.value.trim();
             const email = emailInput.value.trim();
             const input = flagInput.value.trim();
 
-            if (!handle || !email) {
+            if (!email) {
                 status.className = "status-fail";
-                status.innerText = "Please provide your Hacker Alias and SFBU Student Email.";
+                status.innerText = "Please provide your SFBU Student Email.";
                 return;
             }
 
@@ -398,11 +422,10 @@
                 return;
             }
 
-            // Save alias & email to localStorage
-            localStorage.setItem("baysec_alias", handle);
             localStorage.setItem("baysec_email", email);
 
-            // Dispatch token to secure backend API for salted SHA-256 verification and tiered scoring
+            const previewKey = localStorage.getItem('baysec_officer_key') || new URLSearchParams(window.location.search).get('preview_key') || '';
+
             submitBtn.disabled = true;
             submitBtn.innerText = "VERIFYING & CLAIMING...";
 
@@ -410,12 +433,14 @@
                 const queryParams = new URLSearchParams({
                     action: "submit_flag",
                     challenge_id: "challenge_0x01",
-                    handle: handle,
                     email: email,
                     flag: input,
                     week: 4,
                     timestamp: new Date().toISOString()
                 });
+                if (previewKey) {
+                    queryParams.set("preview_key", previewKey);
+                }
 
                 const response = await fetch(`${APPS_SCRIPT_URL}?${queryParams.toString()}`);
                 if (!response.ok) {
@@ -431,7 +456,7 @@
                     logo.classList.remove("denied");
                 } else if (result.success) {
                     status.className = "status-success";
-                    status.innerText = result.message || `ACCESS GRANTED. +${result.pointsAwarded || 25} Points added to your profile!`;
+                    status.innerText = result.message || `ACCESS GRANTED. +${result.pointsAwarded || 25} Points credited to ${result.handle}!`;
                     logo.src = "../assets/baysec-blue.png";
                     logo.classList.remove("denied");
                 } else {

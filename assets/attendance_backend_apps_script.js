@@ -105,6 +105,49 @@ function hashSecret(secret, salt) {
 }
 
 /**
+ * Validates whether the provided token matches the Officer Preview Bypass Key.
+ * Checks Admin_Config for Setting_Key: "Officer_Token" (plaintext or salted hash).
+ * Defaults to built-in salted hash for "baysec_officer_2026".
+ */
+function isOfficerTokenValid(token) {
+  if (!token) return false;
+  const trimmed = String(token).trim();
+  if (!trimmed) return false;
+
+  // 1. Built-in default key check ("baysec_officer_2026")
+  const DEFAULT_OFFICER_TOKEN = "baysec_officer_2026";
+  const DEFAULT_OFFICER_HASH = "64ec1f49ef1312bbec3ccbab01f3ea11b2c0003d18784bc9fa4daab6d22a5214";
+  if (trimmed === DEFAULT_OFFICER_TOKEN || hashSecret(trimmed) === DEFAULT_OFFICER_HASH) {
+    return true;
+  }
+
+  // 2. Check Admin_Config sheet
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    if (!ss) return false;
+    const configSheet = ss.getSheetByName("Admin_Config");
+    if (!configSheet) return false;
+
+    const data = configSheet.getDataRange().getValues();
+    for (let r = 0; r < data.length; r++) {
+      for (let c = 0; c < data[r].length; c++) {
+        const cellVal = String(data[r][c]).trim().toLowerCase();
+        if (cellVal === "officer_token" || cellVal === "officertoken" || cellVal === "bypass_key" || cellVal === "preview_key") {
+          const nextVal = (c + 1 < data[r].length) ? String(data[r][c + 1]).trim() : "";
+          if (nextVal) {
+            if (nextVal === trimmed || hashSecret(trimmed) === nextVal) {
+              return true;
+            }
+          }
+        }
+      }
+    }
+  } catch (e) {}
+
+  return false;
+}
+
+/**
  * Detects whether Simulation/Staging Mode is active in Admin_Config.
  * Checks for key-value row: Setting_Key: "Sim_Mode", Setting_Value: TRUE/FALSE.
  */
@@ -166,6 +209,16 @@ function doPost(e) {
       const result = processFlagSubmission(data);
       return createJsonResponse(result);
     }
+
+    if (data.action === "request_alias_otp") {
+      const result = requestAliasOtp(data);
+      return createJsonResponse(result);
+    }
+
+    if (data.action === "update_alias") {
+      const result = updateHackerAlias(data);
+      return createJsonResponse(result);
+    }
     
     return createJsonResponse({ success: false, message: "Invalid action." });
   } catch (err) {
@@ -178,6 +231,8 @@ function doGet(e) {
   try {
     const tables = getTableNames();
     const isSim = tables.isSim;
+    const previewKey = e && e.parameter ? (e.parameter.preview_key || e.parameter.officer_token || "") : "";
+    const isOfficer = isOfficerTokenValid(previewKey);
 
     if (e && e.parameter && e.parameter.action) {
       if (e.parameter.action === "checkin") {
@@ -186,23 +241,32 @@ function doGet(e) {
       if (e.parameter.action === "submit_flag" || e.parameter.action === "submit_challenge") {
         return createJsonResponse(processFlagSubmission(e.parameter));
       }
+      if (e.parameter.action === "request_alias_otp") {
+        return createJsonResponse(requestAliasOtp(e.parameter));
+      }
+      if (e.parameter.action === "update_alias") {
+        return createJsonResponse(updateHackerAlias(e.parameter));
+      }
       if (e.parameter.action === "get_leaderboard") {
         return createJsonResponse({
           status: "online",
           simMode: isSim,
           table: tables.leaderboard,
+          isOfficer: isOfficer,
           leaderboard: getLeaderboardData()
         });
       }
       if (e.parameter.action === "get_active_session" || e.parameter.action === "status") {
         const session = getActiveSessionConfig();
-        // SANITIZED RESPONSE: strictly returns active_week, isOpen, and simMode (never leaks passcodes or hashes)
+        // SANITIZED RESPONSE: strictly returns active_week, isOpen, simMode, and isOfficer status
         return createJsonResponse({
           status: "online",
           simMode: isSim,
           isOpen: session.isOpen,
           checkinOpen: session.isOpen,
           activeWeek: session.activeWeek,
+          isOfficer: isOfficer,
+          officerPreview: isOfficer,
           message: session.isOpen
             ? "Active session open."
             : (session.message || "Check-in is currently CLOSED. No active meeting session is open right now.")
@@ -218,6 +282,8 @@ function doGet(e) {
       isOpen: session.isOpen,
       checkinOpen: session.isOpen,
       activeWeek: session.activeWeek,
+      isOfficer: isOfficer,
+      officerPreview: isOfficer,
       message: session.isOpen
         ? "Active session open."
         : (session.message || "Check-in is currently CLOSED. No active meeting session is open right now.")
@@ -421,20 +487,26 @@ function processCheckin(data) {
 
 /**
  * Dynamic Tiered Scoring Engine (First Blood & First Day Decay)
+ * Decoupled Submission: Keys strictly on email, resolves or auto-provisions handle.
+ * Progressive Gating: Enforces activeWeek <= challenge_week unless officer bypass key is present.
  * Evaluates submitted token against salted SHA-256 hashes.
  * Strictly enforces unique constraint on (user_email, challenge_id).
  */
 function processFlagSubmission(data) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const tables = getTableNames();
-  const handle = String(data.handle || "").trim();
   const email = String(data.email || "").trim().toLowerCase();
   const submittedToken = String(data.flag || data.token || "").trim();
   const explicitChallengeId = String(data.challenge_id || data.challengeId || "").trim();
   const submittedTimestamp = data.timestamp ? new Date(data.timestamp) : new Date();
+  const previewKey = String(data.preview_key || data.officer_token || "").trim();
+  const isOfficer = isOfficerTokenValid(previewKey);
 
-  if (!handle || !submittedToken) {
-    return { success: false, message: "Missing handle or token." };
+  if (!email || !submittedToken) {
+    return { success: false, message: "Missing student email or flag token." };
+  }
+  if (!email.includes("@")) {
+    return { success: false, message: "Invalid email format. Please provide your SFBU student email." };
   }
 
   // 1. Match challenge via salted SHA-256 hash
@@ -471,7 +543,20 @@ function processFlagSubmission(data) {
   const challengeWeek = matchedChallenge.week;
   const releaseTime = new Date(matchedChallenge.releaseTime);
 
-  // 2. Setup / Check Submissions tab
+  // 2. Progressive Challenge Gating:
+  // For regular students, reject challenges from future weeks. Officers bypass this lock.
+  const activeSession = getActiveSessionConfig();
+  const activeWeek = activeSession.activeWeek || 4;
+
+  if (challengeWeek > activeWeek && !isOfficer) {
+    return {
+      success: false,
+      isLocked: true,
+      message: "CHALLENGE LOCKED: This challenge is scheduled for Week " + challengeWeek + " and is not yet released."
+    };
+  }
+
+  // 3. Setup / Check Submissions tab
   let subSheet = ss.getSheetByName(tables.submissions);
   if (!subSheet) {
     subSheet = ss.insertSheet(tables.submissions);
@@ -481,10 +566,9 @@ function processFlagSubmission(data) {
 
   const subData = subSheet.getDataRange().getValues();
 
-  // 3. Strict Deduplication & Unique Constraint on (user_email, challenge_id) and (handle, challenge_id)
+  // 4. Strict Deduplication & Unique Constraint on (user_email, challenge_id)
   let priorSolvesCount = 0;
   for (let i = 1; i < subData.length; i++) {
-    const loggedHandle = String(subData[i][2] || "").trim().toLowerCase();
     const loggedEmail = String(subData[i][3] || "").trim().toLowerCase();
     const loggedChallenge = String(subData[i][4] || "").trim().toLowerCase();
 
@@ -493,9 +577,8 @@ function processFlagSubmission(data) {
       priorSolvesCount++;
     }
 
-    // Check unique constraint per student
-    const isUserMatch = (loggedHandle === handle.toLowerCase()) || (email && loggedEmail && loggedEmail === email);
-    if (isUserMatch && (loggedChallenge === challengeId.toLowerCase())) {
+    // Check unique constraint per student email
+    if (loggedEmail === email && loggedChallenge === challengeId.toLowerCase()) {
       return {
         success: false,
         alreadyClaimed: true,
@@ -504,7 +587,7 @@ function processFlagSubmission(data) {
     }
   }
 
-  // 4. Dynamic Tiered Point Calculation
+  // 5. Dynamic Tiered Point Calculation
   let solveTier = "STANDARD";
   let pointsAwarded = matchedChallenge.basePoints;
 
@@ -522,72 +605,75 @@ function processFlagSubmission(data) {
     }
   }
 
-  // 5. Update Master Leaderboard Sheet (with Alias Fallback Resolution)
+  // 6. Decoupled Identity Resolution:
+  // Lookup student in Leaderboard by email. If exists, use their handle.
+  // If not found, auto-provision with email prefix as fallback handle and Alias_Set: FALSE.
   const lbSheet = ss.getSheetByName(tables.leaderboard) || ss.getSheetByName("Sheet1");
   const lbData = lbSheet.getDataRange().getValues();
   let studentFound = false;
-  let totalPoints = pointsAwarded;
+  let studentRow = -1;
+  let resolvedHandle = "";
+  const emailPrefix = email.split("@")[0].trim().toLowerCase();
 
   for (let i = 1; i < lbData.length; i++) {
-    const lbHandle = String(lbData[i][0]).trim();
     const lbEmail = String(lbData[i][1]).trim().toLowerCase();
-
-    if (lbHandle.toLowerCase() === handle.toLowerCase() || (email && lbEmail === email)) {
+    if (lbEmail === email) {
       studentFound = true;
-      
-      // Alias Fallback Resolution: If student was migrated without a handle, overwrite with submitted handle
-      const aliasSetVal = lbData[i][7];
-      const isAliasSet = (aliasSetVal === true || String(aliasSetVal).trim().toUpperCase() === "TRUE");
-      if (!isAliasSet) {
-        lbSheet.getRange(i + 1, 1).setValue(handle);
-        lbSheet.getRange(i + 1, 8).setValue(true);
-      }
-      if (email && !lbEmail) {
-        lbSheet.getRange(i + 1, 2).setValue(email);
-      }
-
-      const attendance = parseInt(lbData[i][2]) || 0;
-      let challenges = parseInt(lbData[i][3]) || 0;
-      let bonus = parseInt(lbData[i][4]) || 0;
-
-      if (matchedChallenge.basePoints >= 100) {
-        challenges += 1;
-        const extraBonus = pointsAwarded - matchedChallenge.basePoints;
-        if (extraBonus > 0) bonus += extraBonus;
-        lbSheet.getRange(i + 1, 4).setValue(challenges);
-        lbSheet.getRange(i + 1, 5).setValue(bonus);
-      } else {
-        bonus += pointsAwarded;
-        lbSheet.getRange(i + 1, 5).setValue(bonus);
-      }
-
-      totalPoints = (attendance * 50) + (challenges * 100) + bonus;
-      lbSheet.getRange(i + 1, 6).setValue(totalPoints);
-      lbSheet.getRange(i + 1, 7).setValue(computeTier(totalPoints));
+      studentRow = i + 1;
+      resolvedHandle = String(lbData[i][0]).trim() || emailPrefix;
       break;
     }
   }
 
   if (!studentFound) {
-    let challenges = (matchedChallenge.basePoints >= 100) ? 1 : 0;
-    let bonus = (matchedChallenge.basePoints >= 100) ? (pointsAwarded - matchedChallenge.basePoints) : pointsAwarded;
-    const tier = computeTier(pointsAwarded);
-    lbSheet.appendRow([handle, email, 0, challenges, bonus, pointsAwarded, tier, true]);
+    // Client may optionally pass handle, otherwise fallback to email prefix
+    resolvedHandle = String(data.handle || "").trim() || emailPrefix;
   }
 
-  // 6. Record submission in Submissions tab
-  subSheet.appendRow([submittedTimestamp, challengeWeek, handle, email, challengeId, solveTier, pointsAwarded, submittedHash]);
+  let totalPoints = pointsAwarded;
+
+  if (studentFound) {
+    const attendance = parseInt(lbData[studentRow - 1][2]) || 0;
+    let challenges = parseInt(lbData[studentRow - 1][3]) || 0;
+    let bonus = parseInt(lbData[studentRow - 1][4]) || 0;
+
+    if (matchedChallenge.basePoints >= 100) {
+      challenges += 1;
+      const extraBonus = pointsAwarded - matchedChallenge.basePoints;
+      if (extraBonus > 0) bonus += extraBonus;
+      lbSheet.getRange(studentRow, 4).setValue(challenges);
+      lbSheet.getRange(studentRow, 5).setValue(bonus);
+    } else {
+      bonus += pointsAwarded;
+      lbSheet.getRange(studentRow, 5).setValue(bonus);
+    }
+
+    totalPoints = (attendance * 50) + (challenges * 100) + bonus;
+    lbSheet.getRange(studentRow, 6).setValue(totalPoints);
+    lbSheet.getRange(studentRow, 7).setValue(computeTier(totalPoints));
+  } else {
+    // Auto-provision new student record on Leaderboard
+    let challenges = (matchedChallenge.basePoints >= 100) ? 1 : 0;
+    let bonus = (matchedChallenge.basePoints >= 100) ? (pointsAwarded - matchedChallenge.basePoints) : pointsAwarded;
+    totalPoints = pointsAwarded;
+    const tier = computeTier(totalPoints);
+    // [Handle, Email, Attendance_Count, Challenges_Solved, Bonus_Points, Total_Points, Tier, Alias_Set]
+    lbSheet.appendRow([resolvedHandle, email, 0, challenges, bonus, totalPoints, tier, false]);
+  }
+
+  // 7. Record submission in Submissions tab
+  subSheet.appendRow([submittedTimestamp, challengeWeek, resolvedHandle, email, challengeId, solveTier, pointsAwarded, submittedHash]);
 
   // Construct celebratory response message
   let displayMessage = "";
   if (solveTier === "FIRST_BLOOD") {
-    displayMessage = "ACCESS GRANTED. 🩸 FIRST BLOOD! +" + pointsAwarded + " Points added to your profile!";
+    displayMessage = "ACCESS GRANTED. 🩸 FIRST BLOOD! +" + pointsAwarded + " Points credited to " + resolvedHandle + "!";
   } else if (solveTier === "FIRST_DAY") {
-    displayMessage = "ACCESS GRANTED. ⚡ Day-Of Solve Bonus! +" + pointsAwarded + " Points added to your profile!";
+    displayMessage = "ACCESS GRANTED. ⚡ Day-Of Solve Bonus! +" + pointsAwarded + " Points credited to " + resolvedHandle + "!";
   } else if (challengeId === "easter_egg_0x01") {
-    displayMessage = "🌟 SECRET EASTER EGG UNLOCKED! +" + pointsAwarded + " Bonus Points added to your profile!";
+    displayMessage = "🌟 SECRET EASTER EGG UNLOCKED! +" + pointsAwarded + " Bonus Points credited to " + resolvedHandle + "!";
   } else {
-    displayMessage = "ACCESS GRANTED. +" + pointsAwarded + " Points added to your profile!";
+    displayMessage = "ACCESS GRANTED. +" + pointsAwarded + " Points credited to " + resolvedHandle + "!";
   }
 
   return {
@@ -598,9 +684,12 @@ function processFlagSubmission(data) {
     firstBlood: (solveTier === "FIRST_BLOOD"),
     firstDay: (solveTier === "FIRST_DAY"),
     pointsAwarded: pointsAwarded,
+    handle: resolvedHandle,
+    email: email,
     totalPoints: totalPoints,
     message: displayMessage,
-    simMode: tables.isSim
+    simMode: tables.isSim,
+    isOfficer: isOfficer
   };
 }
 
@@ -682,6 +771,167 @@ function getActiveSessionConfig() {
     passcode: "",
     passcodeHash: "",
     message: "Check-in is currently CLOSED. No active meeting session is open right now."
+  };
+}
+
+/**
+ * Dispatches a 4-digit verification code to the student's email for handle claiming.
+ * Cached in CacheService for 10 minutes (600 seconds).
+ */
+function requestAliasOtp(data) {
+  const email = String(data.email || "").trim().toLowerCase();
+  if (!email || !email.includes("@")) {
+    return { success: false, message: "Please provide a valid SFBU student email." };
+  }
+
+  // Generate 4-digit numeric OTP (1000 - 9999)
+  const otp = String(Math.floor(1000 + Math.random() * 9000));
+  
+  // Cache for 600 seconds (10 minutes)
+  const cacheKey = "otp_" + email;
+  try {
+    const cache = CacheService.getScriptCache();
+    cache.put(cacheKey, otp, 600);
+  } catch (err) {
+    return { success: false, message: "Cache error: " + err.toString() };
+  }
+
+  // Send email via MailApp
+  try {
+    const subject = "[BaySec] Your Hacker Handle Verification Code: " + otp;
+    const bodyText = "Hello BaySec Operator,\n\n" +
+      "Your verification code to claim or edit your Hacker Handle is: " + otp + "\n\n" +
+      "This code will expire in 10 minutes.\n\n" +
+      "If you did not request this verification code, you can safely disregard this email.\n\n" +
+      "— BaySec Security Operations @ SFBU\n" +
+      "https://MynameisKoi.github.io/baysec/";
+
+    const htmlBody = 
+      "<div style='font-family: monospace, Courier, sans-serif; background-color: #0b0f19; color: #f8fafc; padding: 24px; border-radius: 8px; border: 1px solid #38bdf8; max-width: 500px;'>" +
+        "<div style='color: #38bdf8; font-size: 20px; font-weight: bold; margin-bottom: 12px;'>🛡️ BaySec @ SFBU</div>" +
+        "<p style='color: #94a3b8; font-size: 14px;'>Operator Identity Verification</p>" +
+        "<hr style='border: none; border-top: 1px solid #1e293b; margin: 16px 0;' />" +
+        "<p>Your single-use 4-digit verification code to claim or update your Hacker Handle is:</p>" +
+        "<div style='background-color: #0f172a; border: 1px dashed #38bdf8; color: #00f0ff; font-size: 32px; font-weight: bold; letter-spacing: 8px; text-align: center; padding: 16px; margin: 20px 0; border-radius: 6px;'>" +
+          otp +
+        "</div>" +
+        "<p style='color: #f59e0b; font-size: 12px;'>⏱️ This code expires in 10 minutes.</p>" +
+        "<p style='color: #64748b; font-size: 11px; margin-top: 20px;'>If you did not initiate this request, no changes will be made to your handle.</p>" +
+      "</div>";
+
+    MailApp.sendEmail({
+      to: email,
+      subject: subject,
+      body: bodyText,
+      htmlBody: htmlBody
+    });
+
+    return {
+      success: true,
+      message: "Verification code sent to " + email + ". Please check your inbox."
+    };
+  } catch (mailErr) {
+    Logger.log("Mail error: " + mailErr.toString());
+    return {
+      success: false,
+      message: "Failed to dispatch email: " + mailErr.toString() + ". Please verify your email or try again."
+    };
+  }
+}
+
+/**
+ * Verifies OTP and updates the student's hacker alias in the Leaderboard.
+ * Validates uniqueness and format. Preserves all previously earned points.
+ */
+function updateHackerAlias(data) {
+  const email = String(data.email || "").trim().toLowerCase();
+  const otp = String(data.otp || "").trim();
+  const newAlias = String(data.new_alias || data.alias || data.handle || "").trim();
+
+  if (!email || !otp || !newAlias) {
+    return { success: false, message: "Missing email, OTP, or desired alias." };
+  }
+
+  // 1. Validate Alias Format (3-20 characters, alphanumeric, underscores, hyphens)
+  if (newAlias.length < 3 || newAlias.length > 20) {
+    return { success: false, message: "Alias must be between 3 and 20 characters." };
+  }
+  const aliasRegex = /^[a-zA-Z0-9_\-]+$/;
+  if (!aliasRegex.test(newAlias)) {
+    return { success: false, message: "Alias can only contain letters, numbers, underscores, and hyphens." };
+  }
+
+  // 2. Validate OTP against CacheService
+  const cacheKey = "otp_" + email;
+  let cachedOtp = null;
+  try {
+    cachedOtp = CacheService.getScriptCache().get(cacheKey);
+  } catch (e) {}
+
+  if (!cachedOtp || cachedOtp !== otp) {
+    return { success: false, message: "INVALID OR EXPIRED OTP: Please check your code or request a new one." };
+  }
+
+  // 3. Check Alias Uniqueness across Leaderboard (and Leaderboard_Sim)
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const tables = getTableNames();
+  const targetSheets = [tables.leaderboard];
+  if (!tables.isSim && ss.getSheetByName("Leaderboard_Sim")) {
+    targetSheets.push("Leaderboard_Sim");
+  }
+
+  for (let s = 0; s < targetSheets.length; s++) {
+    const sheet = ss.getSheetByName(targetSheets[s]);
+    if (!sheet) continue;
+    const values = sheet.getDataRange().getValues();
+    for (let r = 1; r < values.length; r++) {
+      const existingHandle = String(values[r][0] || "").trim().toLowerCase();
+      const existingEmail = String(values[r][1] || "").trim().toLowerCase();
+      
+      // If someone else already has this alias
+      if (existingHandle === newAlias.toLowerCase() && existingEmail !== email) {
+        return {
+          success: false,
+          message: "ALIAS TAKEN: The handle '" + newAlias + "' is already claimed by another operator. Please choose a different one."
+        };
+      }
+    }
+  }
+
+  // 4. Update the student's row in Leaderboard (or auto-provision if not yet in leaderboard)
+  const lbSheet = ss.getSheetByName(tables.leaderboard) || ss.getSheetByName("Sheet1");
+  const lbData = lbSheet.getDataRange().getValues();
+  let found = false;
+  let currentPoints = 0;
+
+  for (let i = 1; i < lbData.length; i++) {
+    const rowEmail = String(lbData[i][1] || "").trim().toLowerCase();
+    if (rowEmail === email) {
+      found = true;
+      lbSheet.getRange(i + 1, 1).setValue(newAlias); // Update Handle (Col A)
+      lbSheet.getRange(i + 1, 8).setValue(true);     // Alias_Set: TRUE (Col H)
+      currentPoints = parseInt(lbData[i][5]) || 0;
+      break;
+    }
+  }
+
+  if (!found) {
+    // Student claims alias before attending or solving: seed with 0 points
+    const tier = computeTier(0);
+    lbSheet.appendRow([newAlias, email, 0, 0, 0, 0, tier, true]);
+  }
+
+  // Clear OTP from cache on success
+  try {
+    CacheService.getScriptCache().remove(cacheKey);
+  } catch (e) {}
+
+  return {
+    success: true,
+    newAlias: newAlias,
+    email: email,
+    totalPoints: currentPoints,
+    message: "IDENTITY CONFIRMED: Hacker handle successfully updated to '" + newAlias + "'!"
   };
 }
 
@@ -882,17 +1132,25 @@ function setupSheets() {
     // Ensure Sim_Mode setting exists in configSheet
     const data = configSheet.getDataRange().getValues();
     let simModeFound = false;
+    let officerTokenFound = false;
     for (let r = 0; r < data.length; r++) {
       for (let c = 0; c < data[r].length; c++) {
-        if (String(data[r][c]).trim().toLowerCase() === "sim_mode") {
+        const key = String(data[r][c]).trim().toLowerCase();
+        if (key === "sim_mode" || key === "simmode") {
           simModeFound = true;
-          break;
+        }
+        if (key === "officer_token" || key === "officertoken") {
+          officerTokenFound = true;
         }
       }
     }
     if (!simModeFound) {
       const lastRow = configSheet.getLastRow();
       configSheet.getRange(lastRow + 1, 1, 1, 5).setValues([["", "", "", "Sim_Mode", false]]);
+    }
+    if (!officerTokenFound) {
+      const lastRow = configSheet.getLastRow();
+      configSheet.getRange(lastRow + 1, 1, 1, 5).setValues([["", "", "", "Officer_Token", "baysec_officer_2026"]]);
     }
   }
   
