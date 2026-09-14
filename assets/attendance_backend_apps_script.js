@@ -3,6 +3,13 @@
  * BAYSEC ATTENDANCE & LEAGUE SCORING ENGINE (Google Apps Script)
  * ============================================================================
  * 
+ * FEATURES:
+ * 1. Dynamic Staging/Simulation Mode Switch (Admin_Config -> Sim_Mode: TRUE/FALSE)
+ * 2. Dynamic Tiered Scoring Engine (First Blood Bonus & 24h First Day Decay)
+ * 3. Strict Deduplication & Unique Constraint on (user_email, challenge_id)
+ * 4. Production Leaderboard Reset & Solvers Migration with Alias Fallback
+ * 5. Secret Exposure Prevention & Anti-Cheat: Salted SHA-256 Hashing & Sanitized API Responses
+ * 
  * SETUP INSTRUCTIONS:
  * 1. Open your BaySec Google Sheet.
  * 2. Go to: Extensions > Apps Script.
@@ -12,6 +19,62 @@
  * 6. Click "Deploy" > "Manage deployments" > Edit (pencil) > New version > Deploy.
  */
 
+// Global Salt for SHA-256 Hashing (ensures anti-rainbow table & secret protection)
+const DEFAULT_SALT = "baysec_salt_2026_#sfbu";
+
+// Default Challenge Matrix with Salted Hashes, Release Timestamps & Tiered Bonuses
+const CHALLENGES_CONFIG = {
+  "challenge_0x01": {
+    id: "challenge_0x01",
+    title: "Challenge 0x01 - DOM Leak",
+    week: 4,
+    releaseTime: "2026-09-07T18:00:00Z",
+    basePoints: 25,
+    firstBloodBonus: 15, // 25 + 15 = 40 pts
+    firstDayBonus: 5,    // 25 + 5 = 30 pts
+    // Salted SHA-256 hash of "sfbu{w3lc0m3_t0_b4ys3c_2026}"
+    saltedHashes: ["5ffb4d11576aec23e7d1e7650919e0825b4d608d19c91c0c7b3aba288ba18e0a"]
+  },
+  "challenge_0x02": {
+    id: "challenge_0x02",
+    title: "Challenge 0x02 - PCAP Packet Sniffing",
+    week: 5,
+    releaseTime: "2026-09-14T18:00:00Z",
+    basePoints: 100,
+    firstBloodBonus: 25, // 100 + 25 = 125 pts
+    firstDayBonus: 10,   // 100 + 10 = 110 pts
+    // Salted SHA-256 hash of "sfbu{w1r3sh4rk_p4ck3t_sn1ff3r_2026}"
+    saltedHashes: ["2e42bce4a71a27918df6822849f42f459572e4b75c48ce4b77e023f0b194432f"]
+  },
+  "easter_egg_0x01": {
+    id: "easter_egg_0x01",
+    title: "Easter Egg 0x01 - HTTP Basic Auth Creds",
+    week: 5,
+    releaseTime: "2026-09-14T18:00:00Z",
+    basePoints: 50,
+    firstBloodBonus: 0,
+    firstDayBonus: 0,
+    // Supports any of: base64, plaintext creds, password, or sfbu{password}
+    saltedHashes: [
+      "236a5df4deaef042d87ba560fd1f715435c09bc9463deb968a410650398cc102", // c2ZidV9hZG1pbjpoNGNrM3JfcDRzc3cwcmQ=
+      "f37c7d45de252cede4e085cd94a426724a2381c47ff49a185021d7e001f00b5e", // sfbu_admin:h4ck3r_p4ssw0rd
+      "f71995635694550a2778c71a4744fcb0e1e5d209e0d6b77b89a82e3596c0e7e9", // h4ck3r_p4ssw0rd
+      "d238ab5b3e0874f7babf36b177f0635edfdf5e4505bf44877b8483b7f43cf92a"  // sfbu{h4ck3r_p4ssw0rd}
+    ]
+  },
+  "welcome_poster_cipher": {
+    id: "welcome_poster_cipher",
+    title: "Welcome Bonus - Poster Cipher",
+    week: 4,
+    releaseTime: "2026-09-01T00:00:00Z",
+    basePoints: 25,
+    firstBloodBonus: 0,
+    firstDayBonus: 0,
+    // Salted SHA-256 hash of "BaySec is here"
+    saltedHashes: ["ed62383b618c53865e6dc0f289fa03ce45a7c1d1157cab51a4f265b788d03ef0"]
+  }
+};
+
 // Custom toolbar menu in Google Sheets
 function onOpen() {
   SpreadsheetApp.getUi()
@@ -20,6 +83,25 @@ function onOpen() {
     .addItem("Setup Simulation / Staging Tables", "setupSimulationTables")
     .addItem("Initialize All Sheets", "setupSheets")
     .addToUi();
+}
+
+/**
+ * Computes a salted SHA-256 hex string for a given secret token.
+ * Prevents client-side secret leakage and defends against rainbow table lookups.
+ */
+function hashSecret(secret, salt) {
+  salt = salt || DEFAULT_SALT;
+  const normalized = salt + ":" + String(secret || "").trim().toLowerCase();
+  const digest = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, normalized, Utilities.Charset.UTF_8);
+  let hex = "";
+  for (let i = 0; i < digest.length; i++) {
+    let byteVal = digest[i];
+    if (byteVal < 0) byteVal += 256;
+    let byteHex = byteVal.toString(16);
+    if (byteHex.length === 1) byteHex = "0" + byteHex;
+    hex += byteHex;
+  }
+  return hex;
 }
 
 /**
@@ -104,6 +186,7 @@ function doGet(e) {
       }
       if (e.parameter.action === "get_active_session" || e.parameter.action === "status") {
         const session = getActiveSessionConfig();
+        // SANITIZED RESPONSE: strictly returns active_week, isOpen, and simMode (never leaks passcodes or hashes)
         return createJsonResponse({
           status: "online",
           simMode: isSim,
@@ -116,6 +199,8 @@ function doGet(e) {
         });
       }
     }
+
+    // Default status response (sanitized)
     const session = getActiveSessionConfig();
     return createJsonResponse({
       status: "online",
@@ -134,6 +219,7 @@ function doGet(e) {
 
 /**
  * Returns formatted leaderboard array for client API consumption.
+ * Includes firstBlood boolean badge tag and aliasSet status.
  */
 function getLeaderboardData() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -143,6 +229,24 @@ function getLeaderboardData() {
 
   const data = lbSheet.getDataRange().getValues();
   if (data.length <= 1) return [];
+
+  // Identify solvers who earned FIRST_BLOOD in Submissions
+  const firstBloodSolvers = new Set();
+  const subSheet = ss.getSheetByName(tables.submissions);
+  if (subSheet) {
+    const subData = subSheet.getDataRange().getValues();
+    if (subData.length > 1) {
+      for (let i = 1; i < subData.length; i++) {
+        const solveTier = String(subData[i][5] || "").trim().toUpperCase();
+        if (solveTier === "FIRST_BLOOD") {
+          const subHandle = String(subData[i][2] || "").trim().toLowerCase();
+          const subEmail = String(subData[i][3] || "").trim().toLowerCase();
+          if (subHandle) firstBloodSolvers.add(subHandle);
+          if (subEmail) firstBloodSolvers.add(subEmail);
+        }
+      }
+    }
+  }
 
   const results = [];
   for (let i = 1; i < data.length; i++) {
@@ -156,6 +260,8 @@ function getLeaderboardData() {
     const tier = String(data[i][6] || computeTier(points)).trim();
     const aliasSet = (data[i][7] === true || String(data[i][7]).trim().toUpperCase() === "TRUE");
 
+    const hasFirstBlood = firstBloodSolvers.has(handle.toLowerCase()) || (email && firstBloodSolvers.has(email.toLowerCase()));
+
     results.push({
       handle: handle,
       email: email,
@@ -164,7 +270,8 @@ function getLeaderboardData() {
       bonus: bonus,
       points: points,
       tier: tier,
-      aliasSet: aliasSet
+      aliasSet: aliasSet,
+      firstBlood: Boolean(hasFirstBlood)
     });
   }
 
@@ -175,6 +282,7 @@ function getLeaderboardData() {
 
 /**
  * Process and authenticate an incoming student check-in.
+ * Validates against salted hash or plaintext passcode.
  * Dynamically resolves active session and handles sandbox routing + alias fallback.
  */
 function processCheckin(data) {
@@ -192,10 +300,11 @@ function processCheckin(data) {
 
   const activeWeek = session.activeWeek;
   const validPasscode = session.passcode;
+  const validPasscodeHash = session.passcodeHash;
   
   const handle = String(data.handle || "").trim();
   const email = String(data.email || "").trim().toLowerCase();
-  const submittedPasscode = String(data.passcode || "").trim().toUpperCase();
+  const submittedPasscode = String(data.passcode || "").trim();
   
   if (!handle || !email || !submittedPasscode) {
     return {
@@ -204,8 +313,13 @@ function processCheckin(data) {
     };
   }
 
-  // 2. GATE 2: Passcode Verification against valid_passcode
-  if (submittedPasscode !== validPasscode.toUpperCase()) {
+  // 2. GATE 2: Passcode Verification against salted hash and plaintext
+  const submittedHash = hashSecret(submittedPasscode);
+  const isMatch = (validPasscodeHash && submittedHash === validPasscodeHash) ||
+                  (validPasscode && submittedPasscode.toUpperCase() === validPasscode.toUpperCase()) ||
+                  (validPasscode && submittedHash === hashSecret(validPasscode));
+
+  if (!isMatch) {
     return {
       success: false,
       message: "Invalid meeting passcode for Week " + activeWeek + ". (Hint: check the slide projected on the screen!)"
@@ -216,7 +330,7 @@ function processCheckin(data) {
   let logSheet = ss.getSheetByName(tables.attendance);
   if (!logSheet) {
     logSheet = ss.insertSheet(tables.attendance);
-    logSheet.getRange("A1:E1").setValues([["Timestamp", "Week", "Handle", "Email", "Submitted_Passcode"]]);
+    logSheet.getRange("A1:E1").setValues([["Timestamp", "Week", "Handle", "Email", "Passcode_Hash"]]);
     logSheet.getRange("A1:E1").setFontWeight("bold").setBackground("#1e293b").setFontColor("#4ade80");
   }
 
@@ -234,9 +348,9 @@ function processCheckin(data) {
     }
   }
   
-  // 4. Log attendance record under dynamically resolved active_week
+  // 4. Log attendance record under dynamically resolved active_week with salted hash
   const timestamp = new Date();
-  logSheet.appendRow([timestamp, activeWeek, handle, email, submittedPasscode]);
+  logSheet.appendRow([timestamp, activeWeek, handle, email, submittedHash]);
   
   // 5. UPDATE MASTER LEADERBOARD SHEET (with Alias Fallback Resolution)
   const lbSheet = ss.getSheetByName(tables.leaderboard) || ss.getSheetByName("Sheet1");
@@ -251,7 +365,7 @@ function processCheckin(data) {
     if (lbHandle.toLowerCase() === handle.toLowerCase() || (email && lbEmail === email)) {
       studentFound = true;
       
-      // Alias Fallback Resolution: If student was migrated without a handle, overwrite with submitted handle
+      // Alias Fallback Resolution: If student was migrated without a custom handle (Alias_Set: FALSE), overwrite with submitted handle
       const aliasSetVal = lbData[i][7];
       const isAliasSet = (aliasSetVal === true || String(aliasSetVal).trim().toUpperCase() === "TRUE");
       if (!isAliasSet) {
@@ -288,7 +402,7 @@ function processCheckin(data) {
   
   return {
     success: true,
-    message: "Attendance confirmed for Week " + activeWeek + "." + (tables.isSim ? " [SIMULATION MODE]" : ""),
+    message: "Attendance confirmed for Week " + activeWeek + " (+50 Points)!" + (tables.isSim ? " [SIMULATION MODE]" : ""),
     activeWeek: activeWeek,
     totalPoints: totalPoints,
     simMode: tables.isSim
@@ -296,73 +410,82 @@ function processCheckin(data) {
 }
 
 /**
- * Process and credit a challenge flag, mini-challenge, or easter egg submission.
- * Supports Challenge 0x01 (+25 Points), Easter Eggs (+50 Points), and Main Flags (+100 Points).
+ * Dynamic Tiered Scoring Engine (First Blood & First Day Decay)
+ * Evaluates submitted token against salted SHA-256 hashes.
+ * Strictly enforces unique constraint on (user_email, challenge_id).
  */
 function processFlagSubmission(data) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const tables = getTableNames();
   const handle = String(data.handle || "").trim();
   const email = String(data.email || "").trim().toLowerCase();
-  const week = parseInt(data.week) || 4;
-  const flag = String(data.flag || "").trim();
-  const isEasterEgg = Boolean(data.isEasterEgg === true || data.isEasterEgg === "true" || String(data.isEasterEgg).toLowerCase() === "true");
-  const category = String(data.category || data.type || (isEasterEgg ? "Easter_Egg" : "Challenge_Flag")).trim();
+  const submittedToken = String(data.flag || data.token || "").trim();
+  const explicitChallengeId = String(data.challenge_id || data.challengeId || "").trim();
+  const submittedTimestamp = data.timestamp ? new Date(data.timestamp) : new Date();
 
-  // Determine points to award:
-  let pointsAwarded = parseInt(data.points || data.pointsAwarded) || 0;
-  if (!pointsAwarded) {
-    if (isEasterEgg) {
-      pointsAwarded = 50;
-    } else if (category.includes("0x01") || category.toLowerCase().includes("dom leak")) {
-      pointsAwarded = 25;
-    } else {
-      pointsAwarded = 100;
-    }
-  }
-
-  if (!handle || !flag) {
+  if (!handle || !submittedToken) {
     return { success: false, message: "Missing handle or token." };
   }
 
-  // 1. Setup / Check Submissions tab
+  // 1. Match challenge via salted SHA-256 hash
+  const submittedHash = hashSecret(submittedToken);
+  let matchedChallenge = null;
+
+  if (explicitChallengeId && CHALLENGES_CONFIG[explicitChallengeId]) {
+    const ch = CHALLENGES_CONFIG[explicitChallengeId];
+    if (ch.saltedHashes.indexOf(submittedHash) !== -1) {
+      matchedChallenge = ch;
+    }
+  }
+
+  if (!matchedChallenge) {
+    // Scan all registered challenges & easter eggs
+    for (const key in CHALLENGES_CONFIG) {
+      const ch = CHALLENGES_CONFIG[key];
+      if (ch.saltedHashes.indexOf(submittedHash) !== -1) {
+        matchedChallenge = ch;
+        break;
+      }
+    }
+  }
+
+  if (!matchedChallenge) {
+    return {
+      success: false,
+      message: "ACCESS DENIED: Invalid flag format or incorrect payload token."
+    };
+  }
+
+  const challengeId = matchedChallenge.id;
+  const challengeTitle = matchedChallenge.title;
+  const challengeWeek = matchedChallenge.week;
+  const releaseTime = new Date(matchedChallenge.releaseTime);
+
+  // 2. Setup / Check Submissions tab
   let subSheet = ss.getSheetByName(tables.submissions);
   if (!subSheet) {
     subSheet = ss.insertSheet(tables.submissions);
-    subSheet.getRange("A1:G1").setValues([["Timestamp", "Week", "Handle", "Email", "Category", "Points_Awarded", "Flag_Submitted"]]);
-    subSheet.getRange("A1:G1").setFontWeight("bold").setBackground("#1e293b").setFontColor("#f59e0b");
+    subSheet.getRange("A1:H1").setValues([["Timestamp", "Week", "Handle", "Email", "Challenge_ID", "Solve_Tier", "Points_Awarded", "Flag_Hash"]]);
+    subSheet.getRange("A1:H1").setFontWeight("bold").setBackground("#1e293b").setFontColor("#f59e0b");
   }
 
   const subData = subSheet.getDataRange().getValues();
-  const headers = subData[0].map(h => String(h).toLowerCase().trim());
-  let colTime = 0, colWeek = 1, colHandle = 2, colEmail = -1, colCategory = 3, colPoints = -1, colFlag = 4;
 
-  for (let c = 0; c < headers.length; c++) {
-    const h = headers[c];
-    if (h.includes("time")) colTime = c;
-    else if (h.includes("week")) colWeek = c;
-    else if (h.includes("handle") || h.includes("alias")) colHandle = c;
-    else if (h.includes("email")) colEmail = c;
-    else if (h.includes("category") || h.includes("type")) colCategory = c;
-    else if (h.includes("point")) colPoints = c;
-    else if (h.includes("flag") || h.includes("token")) colFlag = c;
-  }
-
-  // 2. Anti-Duplicate Verification: Prevent duplicate point farming
+  // 3. Strict Deduplication & Unique Constraint on (user_email, challenge_id) and (handle, challenge_id)
+  let priorSolvesCount = 0;
   for (let i = 1; i < subData.length; i++) {
-    const loggedHandle = String(subData[i][colHandle]).trim().toLowerCase();
-    const loggedEmail = (colEmail !== -1) ? String(subData[i][colEmail] || "").trim().toLowerCase() : "";
-    const loggedCat = (colCategory !== -1) ? String(subData[i][colCategory] || "").trim().toLowerCase() : "";
-    const loggedFlag = (colFlag !== -1) ? String(subData[i][colFlag] || "").trim().toLowerCase() : "";
+    const loggedHandle = String(subData[i][2] || "").trim().toLowerCase();
+    const loggedEmail = String(subData[i][3] || "").trim().toLowerCase();
+    const loggedChallenge = String(subData[i][4] || "").trim().toLowerCase();
 
-    const isMatchUser = (loggedHandle === handle.toLowerCase()) || (email && loggedEmail && loggedEmail === email);
-    
-    // Check if this submission is for the same challenge/category
-    const isSameCategory = (loggedCat === category.toLowerCase()) ||
-      (category.toLowerCase().includes("0x01") && (loggedCat.includes("0x01") || loggedCat.includes("dom leak") || loggedFlag === flag.toLowerCase())) ||
-      (category.toLowerCase().includes("cipher") && loggedCat.includes("cipher"));
+    // Track total club solves for First Blood evaluation
+    if (loggedChallenge === challengeId.toLowerCase()) {
+      priorSolvesCount++;
+    }
 
-    if (isMatchUser && isSameCategory) {
+    // Check unique constraint per student
+    const isUserMatch = (loggedHandle === handle.toLowerCase()) || (email && loggedEmail && loggedEmail === email);
+    if (isUserMatch && (loggedChallenge === challengeId.toLowerCase())) {
       return {
         success: false,
         alreadyClaimed: true,
@@ -371,7 +494,25 @@ function processFlagSubmission(data) {
     }
   }
 
-  // 3. Update Master Leaderboard Sheet (with Alias Fallback Resolution)
+  // 4. Dynamic Tiered Point Calculation
+  let solveTier = "STANDARD";
+  let pointsAwarded = matchedChallenge.basePoints;
+
+  if (matchedChallenge.firstBloodBonus > 0 && priorSolvesCount === 0) {
+    // First Blood: Very first solver across the entire club
+    solveTier = "FIRST_BLOOD";
+    pointsAwarded = matchedChallenge.basePoints + matchedChallenge.firstBloodBonus;
+  } else if (matchedChallenge.firstDayBonus > 0) {
+    // First Day Decay: Solved within 24 hours of challenge release
+    const diffMs = submittedTimestamp.getTime() - releaseTime.getTime();
+    const isWithin24Hours = (diffMs >= 0 && diffMs <= 24 * 60 * 60 * 1000);
+    if (isWithin24Hours) {
+      solveTier = "FIRST_DAY";
+      pointsAwarded = matchedChallenge.basePoints + matchedChallenge.firstDayBonus;
+    }
+  }
+
+  // 5. Update Master Leaderboard Sheet (with Alias Fallback Resolution)
   const lbSheet = ss.getSheetByName(tables.leaderboard) || ss.getSheetByName("Sheet1");
   const lbData = lbSheet.getDataRange().getValues();
   let studentFound = false;
@@ -399,9 +540,12 @@ function processFlagSubmission(data) {
       let challenges = parseInt(lbData[i][3]) || 0;
       let bonus = parseInt(lbData[i][4]) || 0;
 
-      if (pointsAwarded === 100 && !isEasterEgg) {
+      if (matchedChallenge.basePoints >= 100) {
         challenges += 1;
+        const extraBonus = pointsAwarded - matchedChallenge.basePoints;
+        if (extraBonus > 0) bonus += extraBonus;
         lbSheet.getRange(i + 1, 4).setValue(challenges);
+        lbSheet.getRange(i + 1, 5).setValue(bonus);
       } else {
         bonus += pointsAwarded;
         lbSheet.getRange(i + 1, 5).setValue(bonus);
@@ -415,27 +559,37 @@ function processFlagSubmission(data) {
   }
 
   if (!studentFound) {
-    let challenges = (pointsAwarded === 100 && !isEasterEgg) ? 1 : 0;
-    let bonus = (pointsAwarded === 100 && !isEasterEgg) ? 0 : pointsAwarded;
+    let challenges = (matchedChallenge.basePoints >= 100) ? 1 : 0;
+    let bonus = (matchedChallenge.basePoints >= 100) ? (pointsAwarded - matchedChallenge.basePoints) : pointsAwarded;
     const tier = computeTier(pointsAwarded);
     lbSheet.appendRow([handle, email, 0, challenges, bonus, pointsAwarded, tier, true]);
   }
 
-  // 4. Record submission in Submissions tab
-  const timestamp = data.timestamp ? new Date(data.timestamp) : new Date();
-  if (colEmail !== -1) {
-    subSheet.appendRow([timestamp, week, handle, email, category, pointsAwarded, flag]);
+  // 6. Record submission in Submissions tab
+  subSheet.appendRow([submittedTimestamp, challengeWeek, handle, email, challengeId, solveTier, pointsAwarded, submittedHash]);
+
+  // Construct celebratory response message
+  let displayMessage = "";
+  if (solveTier === "FIRST_BLOOD") {
+    displayMessage = "ACCESS GRANTED. 🩸 FIRST BLOOD! +" + pointsAwarded + " Points added to your profile!";
+  } else if (solveTier === "FIRST_DAY") {
+    displayMessage = "ACCESS GRANTED. ⚡ Day-Of Solve Bonus! +" + pointsAwarded + " Points added to your profile!";
+  } else if (challengeId === "easter_egg_0x01") {
+    displayMessage = "🌟 SECRET EASTER EGG UNLOCKED! +" + pointsAwarded + " Bonus Points added to your profile!";
   } else {
-    subSheet.appendRow([timestamp, week, handle, category, flag]);
+    displayMessage = "ACCESS GRANTED. +" + pointsAwarded + " Points added to your profile!";
   }
 
   return {
     success: true,
-    message: (category.toLowerCase().includes("0x01") || category.toLowerCase().includes("dom leak"))
-      ? "ACCESS GRANTED. +25 Points added to your profile!"
-      : (isEasterEgg ? "Easter egg confirmed (+50 Bonus Points)!" : "Challenge flag confirmed (+100 Points)!"),
+    challengeId: challengeId,
+    challengeTitle: challengeTitle,
+    solveTier: solveTier,
+    firstBlood: (solveTier === "FIRST_BLOOD"),
+    firstDay: (solveTier === "FIRST_DAY"),
     pointsAwarded: pointsAwarded,
     totalPoints: totalPoints,
+    message: displayMessage,
     simMode: tables.isSim
   };
 }
@@ -443,7 +597,6 @@ function processFlagSubmission(data) {
 /**
  * Dynamically queries the currently active meeting session from the Admin_Config sheet.
  * Scans for the row where Is_Checkin_Open == TRUE (boolean true or case-insensitive "TRUE").
- * Does NOT hardcode or fallback to Week 5.
  */
 function getActiveSessionConfig() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -455,6 +608,7 @@ function getActiveSessionConfig() {
       checkinOpen: false,
       activeWeek: null,
       passcode: "",
+      passcodeHash: "",
       message: "Check-in is currently CLOSED. No active meeting session is open right now."
     };
   }
@@ -466,11 +620,11 @@ function getActiveSessionConfig() {
       checkinOpen: false,
       activeWeek: null,
       passcode: "",
+      passcodeHash: "",
       message: "Check-in is currently CLOSED. No active meeting session is open right now."
     };
   }
 
-  // Expected headers: Active_Week (0), Current_Passcode (1), Is_Checkin_Open (2)
   let colWeek = 0;
   let colPasscode = 1;
   let colIsOpen = 2;
@@ -479,7 +633,7 @@ function getActiveSessionConfig() {
   for (let c = 0; c < headers.length; c++) {
     const h = String(headers[c]).trim().toLowerCase();
     if (h === "active_week" || h === "week") colWeek = c;
-    else if (h === "current_passcode" || h === "passcode") colPasscode = c;
+    else if (h.includes("passcode")) colPasscode = c;
     else if (h === "is_checkin_open" || h === "is_open" || h === "open") colIsOpen = c;
   }
 
@@ -489,12 +643,23 @@ function getActiveSessionConfig() {
     const isOpen = (rawOpen === true || String(rawOpen).trim().toUpperCase() === "TRUE");
     if (isOpen) {
       const activeWeek = parseInt(data[i][colWeek]);
-      const validPasscode = String(data[i][colPasscode] || "").trim();
+      const rawPasscode = String(data[i][colPasscode] || "").trim();
+      // If passcode is stored as hash, keep it; if plaintext, compute hash
+      let pHash = "";
+      let pPlain = "";
+      if (rawPasscode.length === 64 && /^[0-9a-fA-F]+$/.test(rawPasscode)) {
+        pHash = rawPasscode.toLowerCase();
+      } else {
+        pPlain = rawPasscode;
+        pHash = hashSecret(rawPasscode);
+      }
+
       return {
         isOpen: true,
         checkinOpen: true,
         activeWeek: activeWeek,
-        passcode: validPasscode,
+        passcode: pPlain,
+        passcodeHash: pHash,
         message: "Active session found."
       };
     }
@@ -505,38 +670,9 @@ function getActiveSessionConfig() {
     checkinOpen: false,
     activeWeek: null,
     passcode: "",
+    passcodeHash: "",
     message: "Check-in is currently CLOSED. No active meeting session is open right now."
   };
-}
-
-/**
- * Reads config safely from Admin_Config sheet.
- * If targetWeek is specified, checks that row.
- * If targetWeek is omitted, delegates to getActiveSessionConfig().
- */
-function getAdminConfig(targetWeek) {
-  if (!targetWeek) {
-    return getActiveSessionConfig();
-  }
-
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const configSheet = ss.getSheetByName("Admin_Config");
-  
-  if (!configSheet) {
-    return { activeWeek: parseInt(targetWeek), passcode: "", isOpen: false, found: false };
-  }
-  
-  const data = configSheet.getDataRange().getValues();
-  for (let i = 1; i < data.length; i++) {
-    const rowWeek = parseInt(data[i][0]);
-    if (rowWeek === parseInt(targetWeek)) {
-      const passcode = String(data[i][1] || "").trim();
-      const isOpen = (data[i][2] === true || String(data[i][2]).trim().toUpperCase() === "TRUE");
-      return { activeWeek: rowWeek, passcode: passcode, isOpen: isOpen, found: true };
-    }
-  }
-
-  return { activeWeek: parseInt(targetWeek), passcode: "", isOpen: false, found: false };
 }
 
 function computeTier(points) {
@@ -561,7 +697,7 @@ function createJsonResponse(obj) {
  *    - Rahim Ajmal Ikhlas (rikhlas4480@student.sfbu.edu)
  *    - Damir Mertl (dmertl25494@student.sfbu.edu)
  * 4. Seeds each solver with +25 bonus points, fallback alias from email prefix, and Alias_Set: FALSE.
- * 5. Seeds Submissions_Log with welcome bonus records to prevent duplicate claims.
+ * 5. Seeds Submissions_Log with welcome bonus records to enforce unique constraint.
  * 6. Preserves existing mock/test leaderboard inside Leaderboard_Sim for testing.
  */
 function migrateVerifiedSolvers() {
@@ -626,12 +762,13 @@ function migrateVerifiedSolvers() {
   let subSheet = ss.getSheetByName("Submissions_Log");
   if (!subSheet) {
     subSheet = ss.insertSheet("Submissions_Log");
-    subSheet.getRange("A1:G1").setValues([["Timestamp", "Week", "Handle", "Email", "Category", "Points_Awarded", "Flag_Submitted"]]);
-    subSheet.getRange("A1:G1").setFontWeight("bold").setBackground("#1e293b").setFontColor("#f59e0b");
+    subSheet.getRange("A1:H1").setValues([["Timestamp", "Week", "Handle", "Email", "Challenge_ID", "Solve_Tier", "Points_Awarded", "Flag_Hash"]]);
+    subSheet.getRange("A1:H1").setFontWeight("bold").setBackground("#1e293b").setFontColor("#f59e0b");
   }
 
   const subData = subSheet.getDataRange().getValues();
   const timestamp = new Date();
+  const cipherHash = hashSecret("BaySec is here");
 
   // 5. Populate Leaderboard with verified solvers
   verifiedSolvers.forEach(solver => {
@@ -646,15 +783,15 @@ function migrateVerifiedSolvers() {
     let alreadyLogged = false;
     for (let i = 1; i < subData.length; i++) {
       const loggedEmail = String(subData[i][3] || "").trim().toLowerCase();
-      const loggedCat = String(subData[i][4] || "").trim().toLowerCase();
-      if (loggedEmail === solver.email.toLowerCase() && (loggedCat.includes("cipher") || loggedCat.includes("welcome"))) {
+      const loggedChId = String(subData[i][4] || "").trim().toLowerCase();
+      if (loggedEmail === solver.email.toLowerCase() && (loggedChId === "welcome_poster_cipher" || loggedChId.includes("cipher"))) {
         alreadyLogged = true;
         break;
       }
     }
 
     if (!alreadyLogged) {
-      subSheet.appendRow([timestamp, 4, fallbackHandle, solver.email.toLowerCase(), "Welcome Bonus - Poster Cipher", 25, "BaySec is here"]);
+      subSheet.appendRow([timestamp, 4, fallbackHandle, solver.email.toLowerCase(), "welcome_poster_cipher", "MIGRATED_WELCOME", 25, cipherHash]);
     }
   });
 
@@ -702,33 +839,35 @@ function setupSimulationTables() {
   let simAttSheet = ss.getSheetByName("Attendance_Sim");
   if (!simAttSheet) {
     simAttSheet = ss.insertSheet("Attendance_Sim");
-    simAttSheet.getRange("A1:E1").setValues([["Timestamp", "Week", "Handle", "Email", "Submitted_Passcode"]]);
+    simAttSheet.getRange("A1:E1").setValues([["Timestamp", "Week", "Handle", "Email", "Passcode_Hash"]]);
     simAttSheet.getRange("A1:E1").setFontWeight("bold").setBackground("#334155").setFontColor("#4ade80");
   }
 
   let simSubSheet = ss.getSheetByName("Submissions_Sim");
   if (!simSubSheet) {
     simSubSheet = ss.insertSheet("Submissions_Sim");
-    simSubSheet.getRange("A1:G1").setValues([["Timestamp", "Week", "Handle", "Email", "Category", "Points_Awarded", "Flag_Submitted"]]);
-    simSubSheet.getRange("A1:G1").setFontWeight("bold").setBackground("#334155").setFontColor("#f59e0b");
+    simSubSheet.getRange("A1:H1").setValues([["Timestamp", "Week", "Handle", "Email", "Challenge_ID", "Solve_Tier", "Points_Awarded", "Flag_Hash"]]);
+    simSubSheet.getRange("A1:H1").setFontWeight("bold").setBackground("#334155").setFontColor("#f59e0b");
   }
 }
 
 /**
  * ONE-CLICK SETUP HELPER:
- * Initializes all required tabs including Admin_Config with Sim_Mode key.
+ * Initializes all required tabs including Admin_Config with Sim_Mode key and salted hashes.
  */
 function setupSheets() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   
-  // 1. Setup Admin_Config tab
+  // 1. Setup Admin_Config tab with salted passcode hashes
   let configSheet = ss.getSheetByName("Admin_Config");
   if (!configSheet) {
     configSheet = ss.insertSheet("Admin_Config");
-    configSheet.getRange("A1:E1").setValues([["Active_Week", "Current_Passcode", "Is_Checkin_Open", "Setting_Key", "Setting_Value"]]);
+    configSheet.getRange("A1:E1").setValues([["Active_Week", "Current_Passcode_Hash", "Is_Checkin_Open", "Setting_Key", "Setting_Value"]]);
     configSheet.getRange("A1:E1").setFontWeight("bold").setBackground("#1e293b").setFontColor("#38bdf8");
-    configSheet.getRange("A2:E2").setValues([[5, "WIRESHARK", true, "Sim_Mode", false]]);
-    configSheet.getRange("A3:E3").setValues([[4, "WELCOME", false, "", ""]]);
+    // Week 5 (WIRESHARK) salted hash, Sim_Mode: false
+    configSheet.getRange("A2:E2").setValues([[5, "2cf4b557a8f9f865e9fab937277185ce2756be1477a63f119042c347a086e320", true, "Sim_Mode", false]]);
+    // Week 4 (WELCOME) salted hash
+    configSheet.getRange("A3:E3").setValues([[4, "fb60441c3a0bb2dd02459b6395d9c2a0447a0d96e11092697ae64d91729b6780", false, "", ""]]);
   } else {
     // Ensure Sim_Mode setting exists in configSheet
     const data = configSheet.getDataRange().getValues();
@@ -751,7 +890,7 @@ function setupSheets() {
   let logSheet = ss.getSheetByName("Attendance_Log");
   if (!logSheet) {
     logSheet = ss.insertSheet("Attendance_Log");
-    logSheet.getRange("A1:E1").setValues([["Timestamp", "Week", "Handle", "Email", "Submitted_Passcode"]]);
+    logSheet.getRange("A1:E1").setValues([["Timestamp", "Week", "Handle", "Email", "Passcode_Hash"]]);
     logSheet.getRange("A1:E1").setFontWeight("bold").setBackground("#1e293b").setFontColor("#4ade80");
   }
 
@@ -759,8 +898,8 @@ function setupSheets() {
   let subSheet = ss.getSheetByName("Submissions_Log");
   if (!subSheet) {
     subSheet = ss.insertSheet("Submissions_Log");
-    subSheet.getRange("A1:G1").setValues([["Timestamp", "Week", "Handle", "Email", "Category", "Points_Awarded", "Flag_Submitted"]]);
-    subSheet.getRange("A1:G1").setFontWeight("bold").setBackground("#1e293b").setFontColor("#f59e0b");
+    subSheet.getRange("A1:H1").setValues([["Timestamp", "Week", "Handle", "Email", "Challenge_ID", "Solve_Tier", "Points_Awarded", "Flag_Hash"]]);
+    subSheet.getRange("A1:H1").setFontWeight("bold").setBackground("#1e293b").setFontColor("#f59e0b");
   }
 
   // 4. Setup Simulation/Staging tabs

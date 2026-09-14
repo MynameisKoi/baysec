@@ -457,6 +457,28 @@
             border-radius: 6px;
         }
 
+        /* Staging / Simulation Banner */
+        .sim-banner {
+            background: linear-gradient(90deg, rgba(245, 158, 11, 0.22), rgba(239, 68, 68, 0.22));
+            border-bottom: 2px solid #f59e0b;
+            color: #fef08a;
+            padding: 12px 20px;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.88rem;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            box-shadow: 0 4px 20px rgba(245, 158, 11, 0.25);
+            animation: fadeIn 0.3s ease;
+        }
+
+        .sim-banner strong {
+            color: #fbbf24;
+            letter-spacing: 0.5px;
+        }
+
         @media (max-width: 900px) {
             .inspector-split {
                 grid-template-columns: 1fr;
@@ -497,6 +519,12 @@
             </a>
         </div>
     </header>
+
+    <!-- Staging / Simulation Warning Banner -->
+    <div id="simBanner" class="sim-banner" style="display: none;">
+        <span>⚠️</span>
+        <span><strong>[STAGING / SIMULATION MODE ACTIVE]</strong> — Sandbox mode is enabled. Submissions and points are isolated to staging tables.</span>
+    </div>
 
     <!-- Briefing Card -->
     <section class="briefing-card">
@@ -570,9 +598,10 @@
         </p>
 
         <form class="submit-form" onsubmit="event.preventDefault(); verifyFlag();" style="display: flex; gap: 10px; flex-wrap: wrap;">
-            <input type="text" id="aliasInput" class="input-token" placeholder="Hacker Alias (e.g. 0xViper)" style="max-width: 240px;" autocomplete="username" />
-            <input type="text" id="flagInput" class="input-token" placeholder="Enter Flag sfbu{...} or Secret Token" autocomplete="off" style="flex: 1; min-width: 260px;" />
-            <button type="submit" class="btn-submit" id="submitBtn">SUBMIT</button>
+            <input type="text" id="aliasInput" class="input-token" placeholder="Hacker Alias (e.g. 0xViper)" style="max-width: 200px;" autocomplete="username" required />
+            <input type="email" id="emailInput" class="input-token" placeholder="SFBU Student Email" style="max-width: 250px;" autocomplete="email" required />
+            <input type="text" id="flagInput" class="input-token" placeholder="Enter Flag sfbu{...} or Secret Token" autocomplete="off" style="flex: 1; min-width: 260px;" required />
+            <button type="submit" class="btn-submit" id="submitBtn">SUBMIT & CLAIM POINTS</button>
         </form>
 
         <div id="statusMsg"></div>
@@ -852,20 +881,50 @@
 
         const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzQO2sZyXWsUtTgpHzbGy5MLTyV-0-kQlnqddTG3SjwDcOMKsjrA7p5kwBjc_tJ7do_Cg/exec";
 
-        // Restore saved alias if available
+        // Restore saved alias & email if available
         const savedAlias = localStorage.getItem("baysec_alias");
+        const savedEmail = localStorage.getItem("baysec_email");
         if (savedAlias && document.getElementById("aliasInput")) {
             document.getElementById("aliasInput").value = savedAlias;
         }
+        if (savedEmail && document.getElementById("emailInput")) {
+            document.getElementById("emailInput").value = savedEmail;
+        }
+
+        // Check for active Simulation Mode to show warning banner
+        async function checkSimMode() {
+            try {
+                const resp = await fetch(`${APPS_SCRIPT_URL}?action=get_active_session`);
+                if (resp.ok) {
+                    const data = await resp.json();
+                    const simBanner = document.getElementById("simBanner");
+                    if (data.simMode && simBanner) {
+                        simBanner.style.display = "flex";
+                    }
+                }
+            } catch (err) {
+                // Ignore silent check errors
+            }
+        }
+        checkSimMode();
 
         async function verifyFlag() {
             const aliasInput = document.getElementById("aliasInput");
+            const emailInput = document.getElementById("emailInput");
             const flagInput = document.getElementById("flagInput");
             const status = document.getElementById("statusMsg");
             const logo = document.getElementById("brandLogo");
+            const submitBtn = document.getElementById("submitBtn");
 
             const handle = aliasInput ? aliasInput.value.trim() : "";
-            const input = flagInput.value.trim();
+            const email = emailInput ? emailInput.value.trim().toLowerCase() : "";
+            const input = flagInput ? flagInput.value.trim() : "";
+
+            if (!handle || !email) {
+                status.className = "status-denied";
+                status.innerText = "Please enter both your Hacker Alias and SFBU Student Email.";
+                return;
+            }
 
             if (!input) {
                 status.className = "status-denied";
@@ -873,69 +932,87 @@
                 return;
             }
 
-            if (handle) {
-                localStorage.setItem("baysec_alias", handle);
-            }
+            localStorage.setItem("baysec_alias", handle);
+            localStorage.setItem("baysec_email", email);
 
-            // 1. Check Easter Egg (Authorization Basic Header)
-            const easterEggVariations = [
-                "c2ZidV9hZG1pbjpoNGNrM3JfcDRzc3cwcmQ=",
-                "sfbu_admin:h4ck3r_p4ssw0rd",
-                "h4ck3r_p4ssw0rd",
-                "sfbu{h4ck3r_p4ssw0rd}"
-            ];
+            submitBtn.disabled = true;
+            submitBtn.innerText = "VERIFYING & CLAIMING...";
 
-            const isEasterEgg = easterEggVariations.some(v => v.toLowerCase() === input.toLowerCase());
-            const isMainFlag = (input === "sfbu{w1r3sh4rk_p4ck3t_sn1ff3r_2026}");
-
-            if (isEasterEgg) {
-                status.className = "status-easteregg";
-                status.innerHTML = `
-                    <div style="font-weight: bold; margin-bottom: 4px;">🌟 SECRET EASTER EGG UNLOCKED! (+50 Bonus Points)</div>
-                    <div style="font-size: 0.85rem; color: #fde68a;">
-                        You extracted and decoded the HTTP Basic Authorization credentials! (<code>sfbu_admin:h4ck3r_p4ssw0rd</code>)<br>
-                        ${handle ? `Bonus points logged for <strong>${handle}</strong>.` : '💡 Enter your Hacker Alias in the box above so an officer can log your bonus points!'}
-                    </div>
-                `;
-                logo.src = "../assets/baysec-blue.png";
-                syncWithLeaderboard("submit_flag", handle, input, true);
-                return;
-            }
-
-            if (isMainFlag) {
-                status.className = "status-granted";
-                status.innerHTML = `
-                    <div style="font-weight: bold; margin-bottom: 4px;">ACCESS GRANTED! Flag Verified (+100 Points)</div>
-                    <div style="font-size: 0.85rem; color: #bbf7d0;">
-                        Telemetry authentication token validated. ${handle ? `Points recorded for <strong>${handle}</strong>!` : 'Enter your Hacker Alias to track your score.'}
-                    </div>
-                `;
-                logo.src = "../assets/baysec-blue.png";
-                syncWithLeaderboard("submit_flag", handle, input, false);
-                return;
-            }
-
-            status.className = "status-denied";
-            status.innerText = "ACCESS DENIED: Invalid flag format or incorrect payload token.";
-            logo.src = "../assets/baysec-red.png";
-        }
-
-        async function syncWithLeaderboard(action, handle, flag, isEasterEgg) {
-            if (!handle || !APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes("REPLACE_WITH_YOUR_DEPLOYED_SCRIPT_URL")) {
-                return;
-            }
             try {
                 const queryParams = new URLSearchParams({
-                    action: action,
+                    action: "submit_flag",
+                    challenge_id: "challenge_0x02",
                     week: 5,
                     handle: handle,
-                    flag: flag,
-                    isEasterEgg: isEasterEgg,
+                    email: email,
+                    flag: input,
                     timestamp: new Date().toISOString()
                 });
-                await fetch(`${APPS_SCRIPT_URL}?${queryParams.toString()}`);
+
+                const response = await fetch(`${APPS_SCRIPT_URL}?${queryParams.toString()}`);
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+
+                const result = await response.json();
+
+                if (result.alreadyClaimed || (result.message && result.message.includes("already claimed"))) {
+                    status.className = "status-easteregg";
+                    status.innerHTML = `
+                        <div style="font-weight: bold; margin-bottom: 4px;">FLAG VERIFIED (ALREADY CLAIMED)</div>
+                        <div style="font-size: 0.85rem; color: #fde68a;">
+                            ${result.message || "You have already claimed points for this challenge."}
+                        </div>
+                    `;
+                    logo.src = "../assets/baysec-blue.png";
+                } else if (result.success) {
+                    logo.src = "../assets/baysec-blue.png";
+                    if (result.challengeId === "easter_egg_0x01") {
+                        status.className = "status-easteregg";
+                        status.innerHTML = `
+                            <div style="font-weight: bold; margin-bottom: 4px;">🌟 SECRET EASTER EGG UNLOCKED! (+${result.pointsAwarded || 50} Bonus Points)</div>
+                            <div style="font-size: 0.85rem; color: #fde68a;">
+                                ${result.message}
+                            </div>
+                        `;
+                    } else if (result.solveTier === "FIRST_BLOOD") {
+                        status.className = "status-granted";
+                        status.innerHTML = `
+                            <div style="font-weight: bold; margin-bottom: 4px;">🩸 FIRST BLOOD CLAIMED! (+${result.pointsAwarded || 125} Points)</div>
+                            <div style="font-size: 0.85rem; color: #bbf7d0;">
+                                ${result.message}
+                            </div>
+                        `;
+                    } else if (result.solveTier === "FIRST_DAY") {
+                        status.className = "status-granted";
+                        status.innerHTML = `
+                            <div style="font-weight: bold; margin-bottom: 4px;">⚡ DAY-OF SOLVE BONUS! (+${result.pointsAwarded || 110} Points)</div>
+                            <div style="font-size: 0.85rem; color: #bbf7d0;">
+                                ${result.message}
+                            </div>
+                        `;
+                    } else {
+                        status.className = "status-granted";
+                        status.innerHTML = `
+                            <div style="font-weight: bold; margin-bottom: 4px;">ACCESS GRANTED! (+${result.pointsAwarded || 100} Points)</div>
+                            <div style="font-size: 0.85rem; color: #bbf7d0;">
+                                ${result.message}
+                            </div>
+                        `;
+                    }
+                } else {
+                    status.className = "status-denied";
+                    status.innerText = result.message || "ACCESS DENIED: Invalid flag format or incorrect payload token.";
+                    logo.src = "../assets/baysec-red.png";
+                }
             } catch (err) {
-                console.warn("Leaderboard sync skipped:", err);
+                console.warn("Verification API error:", err);
+                status.className = "status-denied";
+                status.innerText = "Error contacting verification server. Please check your connection or contact an officer.";
+                logo.src = "../assets/baysec-red.png";
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerText = "SUBMIT & CLAIM POINTS";
             }
         }
 

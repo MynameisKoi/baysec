@@ -485,6 +485,36 @@
             font-size: 1.1rem;
         }
 
+        /* First Blood & Temporary Alias Badges */
+        .first-blood-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 2px 7px;
+            background: rgba(239, 68, 68, 0.18);
+            border: 1px solid rgba(239, 68, 68, 0.5);
+            color: #fca5a5;
+            font-size: 0.72rem;
+            font-family: 'Fira Code', monospace;
+            font-weight: 700;
+            border-radius: 4px;
+            box-shadow: 0 0 8px rgba(239, 68, 68, 0.3);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .fallback-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 2px 6px;
+            background: rgba(148, 163, 184, 0.1);
+            border: 1px solid rgba(148, 163, 184, 0.25);
+            color: #94a3b8;
+            font-size: 0.7rem;
+            font-family: 'Fira Code', monospace;
+            border-radius: 4px;
+        }
+
         /* Empty State */
         .empty-state {
             padding: 40px;
@@ -776,6 +806,10 @@
             const p2 = members[1];
             const p3 = members[2];
 
+            const p1Badge = p1.firstBlood ? `<div style="margin-top: 4px;"><span class="first-blood-badge">🩸 FIRST BLOOD</span></div>` : '';
+            const p2Badge = p2.firstBlood ? `<div style="margin-top: 4px;"><span class="first-blood-badge">🩸 FIRST BLOOD</span></div>` : '';
+            const p3Badge = p3.firstBlood ? `<div style="margin-top: 4px;"><span class="first-blood-badge">🩸 FIRST BLOOD</span></div>` : '';
+
             podium.innerHTML = `
                 <!-- 2nd Place (Silver) -->
                 <div class="podium-card silver">
@@ -783,6 +817,7 @@
                     <div class="podium-handle">${p2.handle}</div>
                     <div class="podium-points">${p2.points} <span style="font-size: 0.9rem; color: var(--text-muted);">PTS</span></div>
                     <span class="podium-badge tier-${p2.tier.toLowerCase()}">${p2.tier}</span>
+                    ${p2Badge}
                 </div>
 
                 <!-- 1st Place (Gold) -->
@@ -791,6 +826,7 @@
                     <div class="podium-handle" style="font-size: 1.4rem;">${p1.handle}</div>
                     <div class="podium-points" style="color: var(--gold); font-size: 1.9rem;">${p1.points} <span style="font-size: 1rem; color: var(--text-muted);">PTS</span></div>
                     <span class="podium-badge tier-${p1.tier.toLowerCase()}">${p1.tier}</span>
+                    ${p1Badge}
                 </div>
 
                 <!-- 3rd Place (Bronze) -->
@@ -799,6 +835,7 @@
                     <div class="podium-handle">${p3.handle}</div>
                     <div class="podium-points">${p3.points} <span style="font-size: 0.9rem; color: var(--text-muted);">PTS</span></div>
                     <span class="podium-badge tier-${p3.tier.toLowerCase()}">${p3.tier}</span>
+                    ${p3Badge}
                 </div>
             `;
         }
@@ -821,13 +858,20 @@
                 else if (rank === 2) rankClass = "rank-top2";
                 else if (rank === 3) rankClass = "rank-top3";
 
+                const firstBloodHtml = m.firstBlood ? `<span class="first-blood-badge" title="First Blood Solver across the club!">🩸 FIRST BLOOD</span>` : '';
+                const fallbackHtml = (m.aliasSet === false) ? `<span class="fallback-badge" title="Temporary alias from student email prefix">TEMP</span>` : '';
+
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td class="rank-num ${rankClass}">#${rank}</td>
                     <td>
                         <div class="handle-cell">
                             <div class="handle-avatar">🛡️</div>
-                            <span>${m.handle}</span>
+                            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                                <span style="font-weight: 600;">${m.handle}</span>
+                                ${firstBloodHtml}
+                                ${fallbackHtml}
+                            </div>
                         </div>
                     </td>
                     <td>

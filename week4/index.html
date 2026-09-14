@@ -402,33 +402,17 @@
             localStorage.setItem("baysec_alias", handle);
             localStorage.setItem("baysec_email", email);
 
-            // Verification Check
-            if (input !== "sfbu{w3lc0m3_t0_b4ys3c_2026}") {
-                status.className = "status-fail";
-                status.innerText = "ACCESS DENIED: Invalid token or flag format.";
-                logo.src = "../assets/baysec-red.png";
-                logo.classList.remove("denied");
-                void logo.offsetWidth;
-                logo.classList.add("denied");
-                return;
-            }
-
-            // Token is verified
-            logo.src = "../assets/baysec-blue.png";
-            logo.classList.remove("denied");
-
-            // Dispatch record to Google Sheet backend
+            // Dispatch token to secure backend API for salted SHA-256 verification and tiered scoring
             submitBtn.disabled = true;
-            submitBtn.innerText = "CLAIMING POINTS...";
+            submitBtn.innerText = "VERIFYING & CLAIMING...";
 
             try {
                 const queryParams = new URLSearchParams({
                     action: "submit_flag",
+                    challenge_id: "challenge_0x01",
                     handle: handle,
                     email: email,
-                    category: "Challenge 0x01 - DOM Leak",
                     flag: input,
-                    points: 25,
                     week: 4,
                     timestamp: new Date().toISOString()
                 });
@@ -442,19 +426,27 @@
 
                 if (result.alreadyClaimed || (result.message && result.message.includes("already claimed"))) {
                     status.className = "status-warning";
-                    status.innerText = "FLAG VERIFIED: You have already claimed points for this challenge.";
+                    status.innerText = result.message || "FLAG VERIFIED: You have already claimed points for this challenge.";
+                    logo.src = "../assets/baysec-blue.png";
+                    logo.classList.remove("denied");
                 } else if (result.success) {
                     status.className = "status-success";
-                    status.innerText = "ACCESS GRANTED. +25 Points added to your profile!";
+                    status.innerText = result.message || `ACCESS GRANTED. +${result.pointsAwarded || 25} Points added to your profile!`;
+                    logo.src = "../assets/baysec-blue.png";
+                    logo.classList.remove("denied");
                 } else {
                     status.className = "status-fail";
                     status.innerText = result.message || "ACCESS DENIED: Invalid token or flag format.";
+                    logo.src = "../assets/baysec-red.png";
+                    logo.classList.remove("denied");
+                    void logo.offsetWidth;
+                    logo.classList.add("denied");
                 }
             } catch (err) {
                 console.warn("Backend sync error:", err);
-                // Graceful fallback: verified client-side against the token
-                status.className = "status-success";
-                status.innerText = "ACCESS GRANTED. +25 Points added to your profile!";
+                status.className = "status-fail";
+                status.innerText = "Error contacting verification server. Please check your connection or contact an officer.";
+                logo.src = "../assets/baysec-red.png";
             } finally {
                 submitBtn.disabled = false;
                 submitBtn.innerText = "SUBMIT TOKEN & CLAIM POINTS";
