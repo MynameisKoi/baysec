@@ -427,7 +427,7 @@
             <span>🛠️</span>
             <span><strong>[OFFICER PREVIEW MODE: ALL CHALLENGES UNLOCKED]</strong></span>
         </div>
-        <button type="button" onclick="exitOfficerPreview()" class="btn-exit-officer">Exit Preview / View as Member</button>
+        <button type="button" onclick="exitOfficerPreview()" class="btn-exit-officer">Exit Officer Mode / View as Member</button>
     </div>
 
     <main class="checkin-card">
@@ -555,8 +555,15 @@
                 const officerBanner = document.getElementById('officerBanner');
                 if (isOfficer && officerBanner) {
                     officerBanner.style.display = "flex";
-                } else if (officerBanner) {
-                    officerBanner.style.display = "none";
+                } else {
+                    if (previewKey) {
+                        localStorage.removeItem("baysec_officer_token");
+                        localStorage.removeItem("baysec_officer_key");
+                        sessionStorage.clear();
+                    }
+                    if (officerBanner) {
+                        officerBanner.style.display = "none";
+                    }
                 }
 
                 if (isOpen && data.activeWeek) {
@@ -703,8 +710,7 @@
         function exitOfficerPreview() {
             localStorage.removeItem("baysec_officer_token");
             localStorage.removeItem("baysec_officer_key");
-            sessionStorage.removeItem("baysec_officer_token");
-            sessionStorage.removeItem("baysec_officer_key");
+            sessionStorage.clear();
             const url = new URL(window.location.href);
             url.searchParams.delete('preview_key');
             window.history.replaceState({}, document.title, url.pathname + (url.search ? url.search : ''));

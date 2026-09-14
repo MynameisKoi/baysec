@@ -824,7 +824,7 @@
             <span>🛠️</span>
             <span><strong>[OFFICER PREVIEW MODE: ALL CHALLENGES UNLOCKED]</strong></span>
         </div>
-        <button type="button" onclick="exitOfficerPreview()" class="btn-exit-officer">Exit Preview / View as Member</button>
+        <button type="button" onclick="exitOfficerPreview()" class="btn-exit-officer">Exit Officer Mode / View as Member</button>
     </div>
 
     <!-- Main Challenge Container: Default-to-Deny (hidden on initial paint to eliminate 1-2s flash) -->
@@ -912,16 +912,74 @@
 
     </main>
 
-    <!-- Synchronous Gate Check: Default-to-Deny -->
+    <!-- Synchronous Gate Check: Strict Hash Validation & Default-to-Deny -->
     <script>
         (function() {
+            function syncSha256(ascii) {
+                function rightRotate(v, a) { return (v >>> a) | (v << (32 - a)); }
+                var mathPow = Math.pow, maxWord = mathPow(2, 32), i, j, result = '', words = [];
+                var asciiBitLength = ascii.length * 8, hash = [], k = [], primeCounter = 0, isComp = {};
+                for (var candidate = 2; primeCounter < 64; candidate++) {
+                    if (!isComp[candidate]) {
+                        for (i = 0; i < 313; i += candidate) isComp[i] = candidate;
+                        hash[primeCounter] = (mathPow(candidate, 0.5) * maxWord) | 0;
+                        k[primeCounter++] = (mathPow(candidate, 1 / 3) * maxWord) | 0;
+                    }
+                }
+                ascii += '\x80';
+                while (ascii.length % 64 - 56) ascii += '\x00';
+                for (i = 0; i < ascii.length; i++) {
+                    j = ascii.charCodeAt(i);
+                    words[i >> 2] |= j << ((3 - i) % 4) * 8;
+                }
+                words[words.length] = ((asciiBitLength / maxWord) | 0);
+                words[words.length] = (asciiBitLength | 0);
+                for (j = 0; j < words.length;) {
+                    var w = words.slice(j, j += 16), oldHash = hash;
+                    hash = hash.slice(0, 8);
+                    for (i = 0; i < 64; i++) {
+                        var w15 = w[i - 15], w2 = w[i - 2];
+                        var s0 = rightRotate(w15, 7) ^ rightRotate(w15, 18) ^ (w15 >>> 3);
+                        var s1 = rightRotate(w2, 17) ^ rightRotate(w2, 19) ^ (w2 >>> 10);
+                        var ch = (hash[4] & hash[5]) ^ (~hash[4] & hash[6]);
+                        var maj = (hash[0] & hash[1]) ^ (hash[0] & hash[2]) ^ (hash[1] & hash[2]);
+                        var temp1 = hash[7] + (rightRotate(hash[4], 6) ^ rightRotate(hash[4], 11) ^ rightRotate(hash[4], 25)) + ch + k[i] + (w[i] = (i < 16) ? w[i] : (w[i - 16] + s0 + w[i - 7] + s1) | 0);
+                        var temp2 = (rightRotate(hash[0], 2) ^ rightRotate(hash[0], 13) ^ rightRotate(hash[0], 22)) + maj;
+                        hash = [(temp1 + temp2) | 0].concat(hash);
+                        hash[4] = (hash[4] + temp1) | 0;
+                    }
+                    for (i = 0; i < 8; i++) hash[i] = (hash[i] + oldHash[i]) | 0;
+                }
+                for (i = 0; i < 8; i++) {
+                    for (j = 3; j + 1; j--) {
+                        var b = (hash[i] >> (j * 8)) & 255;
+                        result += ((b < 16) ? '0' : '') + b.toString(16);
+                    }
+                }
+                return result;
+            }
+
             try {
                 const token = localStorage.getItem('baysec_officer_token') || localStorage.getItem('baysec_officer_key');
                 if (token && token.trim()) {
-                    const mainEl = document.getElementById('challengeMain');
-                    if (mainEl) mainEl.style.display = 'block';
+                    const salt = "baysec_salt_2026_#sfbu";
+                    const knownHash = "64ec1f49ef1312bbec3ccbab01f3ea11b2c0003d18784bc9fa4daab6d22a5214";
+                    const computed = syncSha256(salt + ":" + token.trim().toLowerCase());
+                    if (computed === knownHash) {
+                        const mainEl = document.getElementById('challengeMain');
+                        if (mainEl) mainEl.style.display = 'block';
+                        return;
+                    }
+                    // Invalid / unauthorized token: Immediately purge from storage
+                    localStorage.removeItem('baysec_officer_token');
+                    localStorage.removeItem('baysec_officer_key');
+                    sessionStorage.removeItem('baysec_officer_token');
+                    sessionStorage.removeItem('baysec_officer_key');
                 }
             } catch(e) {}
+            // Keep container hidden
+            const mainEl = document.getElementById('challengeMain');
+            if (mainEl) mainEl.style.display = 'none';
         })();
     </script>
 
@@ -1231,39 +1289,41 @@
                         simBanner.style.display = "flex";
                     }
 
-                    // Officer Preview Banner
+                    // Officer Preview State
                     const isOfficer = !!data.isOfficer;
-                    if (isOfficer && officerBanner) {
-                        officerBanner.style.display = "flex";
-                    } else if (officerBanner) {
-                        officerBanner.style.display = "none";
-                    }
-
-                    // Progressive Gating: Challenge 0x02 is for Week 5
-                    const activeWeek = data.activeWeek || 4;
-                    if (isOfficer || activeWeek >= 5) {
+                    if (isOfficer) {
+                        if (officerBanner) officerBanner.style.display = "flex";
                         if (challengeMain) challengeMain.style.display = "block";
                         if (lockOverlay) lockOverlay.style.display = "none";
                     } else {
-                        // Keep challenge strictly hidden & show locked overlay modal
-                        if (challengeMain) challengeMain.style.display = "none";
-                        if (lockOverlay) lockOverlay.style.display = "flex";
+                        // Non-officer: If an invalid token was stored/passed, purge it immediately
+                        if (previewKey) {
+                            localStorage.removeItem("baysec_officer_token");
+                            localStorage.removeItem("baysec_officer_key");
+                            sessionStorage.removeItem("baysec_officer_token");
+                            sessionStorage.removeItem("baysec_officer_key");
+                        }
+                        if (officerBanner) officerBanner.style.display = "none";
+
+                        // Progressive Gating: Challenge 0x02 is for Week 5
+                        const activeWeek = data.activeWeek || 4;
+                        if (activeWeek >= 5) {
+                            if (challengeMain) challengeMain.style.display = "block";
+                            if (lockOverlay) lockOverlay.style.display = "none";
+                        } else {
+                            if (challengeMain) challengeMain.style.display = "none";
+                            if (lockOverlay) lockOverlay.style.display = "flex";
+                        }
                     }
                 } else {
-                    // Non-OK response: Default-to-deny if no local officer token
-                    const hasLocalToken = !!(localStorage.getItem('baysec_officer_token') || localStorage.getItem('baysec_officer_key'));
-                    if (!hasLocalToken) {
-                        if (challengeMain) challengeMain.style.display = "none";
-                        if (lockOverlay) lockOverlay.style.display = "flex";
-                    }
-                }
-            } catch (err) {
-                console.warn("Session check error:", err);
-                const hasLocalToken = !!(localStorage.getItem('baysec_officer_token') || localStorage.getItem('baysec_officer_key'));
-                if (!hasLocalToken) {
+                    // Non-OK response: Default-to-deny if no verified token
                     if (challengeMain) challengeMain.style.display = "none";
                     if (lockOverlay) lockOverlay.style.display = "flex";
                 }
+            } catch (err) {
+                console.warn("Session check error:", err);
+                if (challengeMain) challengeMain.style.display = "none";
+                if (lockOverlay) lockOverlay.style.display = "flex";
             }
         }
         checkSessionAndGate();
@@ -1274,7 +1334,7 @@
         function openOfficerModal() {
             const input = document.getElementById("officerTokenInput");
             if (input) {
-                input.value = localStorage.getItem("baysec_officer_token") || localStorage.getItem("baysec_officer_key") || "";
+                input.value = "";
             }
             const msg = document.getElementById("officerModalMsg");
             if (msg) msg.innerText = "";
@@ -1288,7 +1348,7 @@
             if (modal) modal.style.display = "none";
         }
 
-        function saveOfficerToken() {
+        async function saveOfficerToken() {
             const input = document.getElementById("officerTokenInput");
             const token = input ? input.value.trim() : "";
             const msg = document.getElementById("officerModalMsg");
@@ -1299,26 +1359,70 @@
                 }
                 return;
             }
-            localStorage.setItem("baysec_officer_token", token);
-            localStorage.setItem("baysec_officer_key", token);
-            sessionStorage.setItem("baysec_officer_token", token);
-            sessionStorage.setItem("baysec_officer_key", token);
+
             if (msg) {
-                msg.style.color = "#4ade80";
-                msg.innerText = "Officer authorization saved! Unlocking preview...";
+                msg.style.color = "#38bdf8";
+                msg.innerText = "Verifying token with authentication gateway...";
             }
-            setTimeout(() => {
-                const url = new URL(window.location.href);
-                url.searchParams.set('preview_key', token);
-                window.location.href = url.toString();
-            }, 400);
+
+            try {
+                // NEVER save to storage before server verification
+                const resp = await fetch(`${APPS_SCRIPT_URL}?action=verify_officer_token&token=${encodeURIComponent(token)}`);
+                const result = await resp.json();
+
+                if (result && result.valid === true) {
+                    // Server verified token: Save to storage and unlock
+                    localStorage.setItem("baysec_officer_token", token);
+                    localStorage.setItem("baysec_officer_key", token);
+                    sessionStorage.setItem("baysec_officer_token", token);
+                    sessionStorage.setItem("baysec_officer_key", token);
+
+                    if (msg) {
+                        msg.style.color = "#4ade80";
+                        msg.innerText = "Officer authorization verified! Unlocking...";
+                    }
+
+                    const officerBanner = document.getElementById("officerBanner");
+                    if (officerBanner) officerBanner.style.display = "flex";
+                    const challengeMain = document.getElementById("challengeMain");
+                    if (challengeMain) challengeMain.style.display = "block";
+                    const lockOverlay = document.getElementById("challengeGateLock");
+                    if (lockOverlay) lockOverlay.style.display = "none";
+
+                    setTimeout(() => {
+                        closeOfficerModal();
+                    }, 600);
+                } else {
+                    // Invalid token: Explicitly purge from storage and lock
+                    localStorage.removeItem("baysec_officer_token");
+                    localStorage.removeItem("baysec_officer_key");
+                    sessionStorage.removeItem("baysec_officer_token");
+                    sessionStorage.removeItem("baysec_officer_key");
+
+                    if (msg) {
+                        msg.style.color = "#f87171";
+                        msg.innerText = "ACCESS DENIED: Invalid Officer Token";
+                    }
+
+                    const challengeMain = document.getElementById("challengeMain");
+                    if (challengeMain) challengeMain.style.display = "none";
+                    const lockOverlay = document.getElementById("challengeGateLock");
+                    if (lockOverlay) lockOverlay.style.display = "flex";
+                    const officerBanner = document.getElementById("officerBanner");
+                    if (officerBanner) officerBanner.style.display = "none";
+                }
+            } catch (err) {
+                if (msg) {
+                    msg.style.color = "#f87171";
+                    msg.innerText = "ACCESS DENIED: Invalid Officer Token";
+                }
+            }
         }
 
         function exitOfficerPreview() {
             localStorage.removeItem("baysec_officer_token");
             localStorage.removeItem("baysec_officer_key");
-            sessionStorage.removeItem("baysec_officer_token");
-            sessionStorage.removeItem("baysec_officer_key");
+            sessionStorage.clear();
             const url = new URL(window.location.href);
             url.searchParams.delete('preview_key');
             window.history.replaceState({}, document.title, url.pathname + (url.search ? url.search : ''));

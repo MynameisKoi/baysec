@@ -222,6 +222,16 @@ function doPost(e) {
       const result = updateHackerAlias(data);
       return createJsonResponse(result);
     }
+
+    if (data.action === "verify_officer_token") {
+      const tokenToVerify = data.token || data.preview_key || data.officer_token || "";
+      const isValid = isOfficerTokenValid(tokenToVerify);
+      return createJsonResponse({
+        valid: isValid,
+        isOfficer: isValid,
+        message: isValid ? "Officer token verified successfully." : "ACCESS DENIED: Invalid Officer Token."
+      });
+    }
     
     return createJsonResponse({ success: false, message: "Invalid action." });
   } catch (err) {
@@ -238,6 +248,15 @@ function doGet(e) {
     const isOfficer = isOfficerTokenValid(previewKey);
 
     if (e && e.parameter && e.parameter.action) {
+      if (e.parameter.action === "verify_officer_token") {
+        const tokenToVerify = e.parameter.token || e.parameter.preview_key || e.parameter.officer_token || "";
+        const isValid = isOfficerTokenValid(tokenToVerify);
+        return createJsonResponse({
+          valid: isValid,
+          isOfficer: isValid,
+          message: isValid ? "Officer token verified successfully." : "ACCESS DENIED: Invalid Officer Token."
+        });
+      }
       if (e.parameter.action === "checkin") {
         return createJsonResponse(processCheckin(e.parameter));
       }
