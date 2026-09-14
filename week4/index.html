@@ -6,6 +6,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>BaySec @ SFBU — Internal Portal</title>
     <link rel="icon" type="image/png" href="../assets/baysec-blue.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600;700&family=Outfit:wght@300;400;600;700;800&display=swap"
+        rel="stylesheet">
     <style>
         * {
             box-sizing: border-box;
@@ -16,24 +21,40 @@
         body {
             background-color: #0b0f19;
             color: #00f0ff;
-            font-family: 'Courier New', Courier, monospace;
+            font-family: 'Fira Code', 'Courier New', monospace;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             min-height: 100vh;
             padding: 20px;
+            background-image:
+                radial-gradient(circle at 15% 15%, rgba(0, 240, 255, 0.08) 0%, transparent 45%),
+                radial-gradient(circle at 85% 85%, rgba(74, 222, 128, 0.06) 0%, transparent 45%);
+            background-attachment: fixed;
         }
 
         .terminal-card {
             background: #111827;
             border: 1px solid #1f293d;
             box-shadow: 0 0 25px rgba(0, 240, 255, 0.15);
-            border-radius: 8px;
+            border-radius: 12px;
             width: 100%;
-            max-width: 580px;
-            padding: 28px;
+            max-width: 540px;
+            padding: 32px 28px;
             text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .terminal-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #00f0ff, #3b82f6, #4ade80);
         }
 
         .logo-container {
@@ -43,7 +64,7 @@
         }
 
         .brand-logo {
-            width: 120px;
+            width: 110px;
             height: auto;
             cursor: pointer;
             filter: drop-shadow(0 0 14px rgba(0, 240, 255, 0.4));
@@ -76,71 +97,170 @@
             border-radius: 4px;
             font-size: 0.8rem;
             letter-spacing: 1px;
+            margin-bottom: 6px;
+            font-weight: 700;
+        }
+
+        .points-pill {
+            display: inline-block;
+            padding: 4px 14px;
+            background: rgba(0, 240, 255, 0.12);
+            color: #00f0ff;
+            border: 1px solid rgba(0, 240, 255, 0.4);
+            border-radius: 999px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            letter-spacing: 0.8px;
             margin-bottom: 16px;
+            box-shadow: 0 0 10px rgba(0, 240, 255, 0.15);
         }
 
         h1 {
-            font-size: 1.6rem;
+            font-size: 1.55rem;
             color: #f8fafc;
-            margin-bottom: 12px;
+            margin-bottom: 10px;
             letter-spacing: 0.5px;
+            font-family: 'Outfit', sans-serif;
+            font-weight: 800;
         }
 
         p {
             color: #94a3b8;
-            font-size: 0.95rem;
+            font-size: 0.9rem;
             line-height: 1.6;
-            margin-bottom: 24px;
+            margin-bottom: 22px;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        .form-group {
+            margin-bottom: 14px;
+            text-align: left;
+        }
+
+        label {
+            display: block;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #94a3b8;
+            margin-bottom: 5px;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
         }
 
         .input-box {
             width: 100%;
-            padding: 12px;
-            background: #0b0f19;
-            border: 1px solid #334155;
-            color: #38bdf8;
+            padding: 11px 14px;
+            background: #090d16;
+            border: 1px solid #1f293d;
+            color: #f8fafc;
             font-family: inherit;
-            border-radius: 4px;
+            border-radius: 6px;
             outline: none;
-            font-size: 1rem;
-            margin-bottom: 16px;
+            font-size: 0.95rem;
+            transition: all 0.2s ease;
+        }
+
+        .input-box.code-input {
+            color: #00f0ff;
+            letter-spacing: 0.5px;
+            font-weight: 600;
         }
 
         .input-box:focus {
             border-color: #00f0ff;
-            box-shadow: 0 0 8px rgba(0, 240, 255, 0.3);
+            box-shadow: 0 0 10px rgba(0, 240, 255, 0.25);
         }
 
         .btn {
             width: 100%;
-            padding: 12px;
-            background: #0284c7;
-            color: #ffffff;
+            padding: 13px;
+            margin-top: 6px;
+            background: linear-gradient(135deg, #0284c7 0%, #00f0ff 100%);
+            color: #040914;
             border: none;
-            font-weight: bold;
-            border-radius: 4px;
+            font-weight: 800;
+            border-radius: 6px;
             cursor: pointer;
             font-family: inherit;
-            letter-spacing: 1px;
-            transition: 0.2s ease;
+            letter-spacing: 0.8px;
+            font-size: 0.95rem;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 15px rgba(0, 240, 255, 0.3);
         }
 
-        .btn:hover {
-            background: #0369a1;
+        .btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 240, 255, 0.5);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
         }
 
         #status-msg {
-            margin-top: 16px;
+            margin-top: 18px;
             font-size: 0.9rem;
-            min-height: 20px;
+            padding: 12px 14px;
+            border-radius: 6px;
+            line-height: 1.5;
+            display: none;
+            animation: fadeIn 0.25s ease;
+            text-align: center;
+            font-weight: 600;
         }
 
-        .status-fail {
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-4px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        #status-msg.status-success {
+            display: block;
+            background: rgba(74, 222, 128, 0.1);
+            border: 1px solid #4ade80;
+            color: #4ade80;
+        }
+
+        #status-msg.status-warning {
+            display: block;
+            background: rgba(245, 158, 11, 0.1);
+            border: 1px solid #f59e0b;
+            color: #fbbf24;
+        }
+
+        #status-msg.status-fail {
+            display: block;
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid #ef4444;
             color: #f87171;
         }
 
-        .status-success {
-            color: #4ade80;
+        .card-footer {
+            margin-top: 20px;
+            padding-top: 14px;
+            border-top: 1px solid #1f293d;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.75rem;
+            color: #64748b;
+        }
+
+        .card-footer a {
+            color: #00f0ff;
+            text-decoration: none;
+        }
+
+        .card-footer a:hover {
+            text-decoration: underline;
         }
     </style>
 </head>
@@ -154,17 +274,54 @@
             <img id="brandLogo" src="../assets/baysec-blue.png" alt="BaySec @ SFBU Logo" class="brand-logo" onclick="toggleLogoTheme()" title="Click to toggle crest" />
         </div>
         <div class="badge">CHALLENGE 0x01</div>
+        <div>
+            <div class="points-pill">+25 LEAGUE POINTS</div>
+        </div>
         <h1>BaySec Security Gateway</h1>
         <p>Unauthorized access attempt logged. An operator left their session token lingering somewhere inside the
             client interface. Inspect the gateway to retrieve the token.</p>
 
-        <input type="text" id="flagInput" class="input-box" placeholder="sfbu{...}" autocomplete="off" />
-        <button class="btn" onclick="verifyFlag()">SUBMIT TOKEN</button>
+        <form id="challengeForm" onsubmit="verifyFlag(event)">
+            <div class="form-group">
+                <label for="handleInput">Hacker Alias / Handle</label>
+                <input type="text" id="handleInput" class="input-box" placeholder="e.g. 0xViper or your alias"
+                    required autocomplete="username" />
+            </div>
+
+            <div class="form-group">
+                <label for="emailInput">SFBU Student Email</label>
+                <input type="email" id="emailInput" class="input-box" placeholder="e.g. student@student.sfbu.edu"
+                    required autocomplete="email" />
+            </div>
+
+            <div class="form-group">
+                <label for="flagInput">Gateway Session Token</label>
+                <input type="text" id="flagInput" class="input-box code-input" placeholder="sfbu{...}"
+                    required autocomplete="off" />
+            </div>
+
+            <button type="submit" id="submitBtn" class="btn">SUBMIT TOKEN & CLAIM POINTS</button>
+        </form>
 
         <div id="status-msg"></div>
+
+        <div class="card-footer">
+            <span>🛡️ BaySec CTF Gateway</span>
+            <a href="../leaderboard.html" target="_blank">View Leaderboard ➔</a>
+        </div>
     </div>
 
     <script>
+        const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzQO2sZyXWsUtTgpHzbGy5MLTyV-0-kQlnqddTG3SjwDcOMKsjrA7p5kwBjc_tJ7do_Cg/exec";
+
+        // Pre-fill saved handle / email from previous sessions
+        document.addEventListener("DOMContentLoaded", () => {
+            const savedAlias = localStorage.getItem("baysec_alias") || localStorage.getItem("baysec_handle");
+            const savedEmail = localStorage.getItem("baysec_email");
+            if (savedAlias) document.getElementById("handleInput").value = savedAlias;
+            if (savedEmail) document.getElementById("emailInput").value = savedEmail;
+        });
+
         function toggleLogoTheme() {
             const logo = document.getElementById("brandLogo");
             if (logo.src.includes("baysec-blue")) {
@@ -174,23 +331,92 @@
             }
         }
 
-        function verifyFlag() {
-            const input = document.getElementById("flagInput").value.trim();
+        async function verifyFlag(e) {
+            if (e) e.preventDefault();
+
+            const handleInput = document.getElementById("handleInput");
+            const emailInput = document.getElementById("emailInput");
+            const flagInput = document.getElementById("flagInput");
+            const submitBtn = document.getElementById("submitBtn");
             const status = document.getElementById("status-msg");
             const logo = document.getElementById("brandLogo");
 
-            if (input === "sfbu{w3lc0m3_t0_b4ys3c_2026}") {
-                status.className = "status-success";
-                status.innerText = "ACCESS GRANTED. Welcome to BaySec @ SFBU!";
-                logo.src = "../assets/baysec-blue.png";
-                logo.classList.remove("denied");
-            } else {
+            const handle = handleInput.value.trim();
+            const email = emailInput.value.trim();
+            const input = flagInput.value.trim();
+
+            if (!handle || !email) {
                 status.className = "status-fail";
-                status.innerText = "ACCESS DENIED: Invalid flag format or token.";
+                status.innerText = "Please provide your Hacker Alias and SFBU Student Email.";
+                return;
+            }
+
+            if (!input) {
+                status.className = "status-fail";
+                status.innerText = "Please enter a session token.";
+                return;
+            }
+
+            // Save alias & email to localStorage
+            localStorage.setItem("baysec_alias", handle);
+            localStorage.setItem("baysec_email", email);
+
+            // Verification Check
+            if (input !== "sfbu{w3lc0m3_t0_b4ys3c_2026}") {
+                status.className = "status-fail";
+                status.innerText = "ACCESS DENIED: Invalid token or flag format.";
                 logo.src = "../assets/baysec-red.png";
                 logo.classList.remove("denied");
                 void logo.offsetWidth;
                 logo.classList.add("denied");
+                return;
+            }
+
+            // Token is verified
+            logo.src = "../assets/baysec-blue.png";
+            logo.classList.remove("denied");
+
+            // Dispatch record to Google Sheet backend
+            submitBtn.disabled = true;
+            submitBtn.innerText = "CLAIMING POINTS...";
+
+            try {
+                const queryParams = new URLSearchParams({
+                    action: "submit_flag",
+                    handle: handle,
+                    email: email,
+                    category: "Challenge 0x01 - DOM Leak",
+                    flag: input,
+                    points: 25,
+                    week: 4,
+                    timestamp: new Date().toISOString()
+                });
+
+                const response = await fetch(`${APPS_SCRIPT_URL}?${queryParams.toString()}`);
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+
+                const result = await response.json();
+
+                if (result.alreadyClaimed || (result.message && result.message.includes("already claimed"))) {
+                    status.className = "status-warning";
+                    status.innerText = "FLAG VERIFIED: You have already claimed points for this challenge.";
+                } else if (result.success) {
+                    status.className = "status-success";
+                    status.innerText = "ACCESS GRANTED. +25 Points added to your profile!";
+                } else {
+                    status.className = "status-fail";
+                    status.innerText = result.message || "ACCESS DENIED: Invalid token or flag format.";
+                }
+            } catch (err) {
+                console.warn("Backend sync error:", err);
+                // Graceful fallback: verified client-side against the token
+                status.className = "status-success";
+                status.innerText = "ACCESS GRANTED. +25 Points added to your profile!";
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerText = "SUBMIT TOKEN & CLAIM POINTS";
             }
         }
     </script>

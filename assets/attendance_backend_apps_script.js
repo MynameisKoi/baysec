@@ -189,64 +189,112 @@ function processCheckin(data) {
 }
 
 /**
- * Process and credit a challenge flag or easter egg submission.
+ * Process and credit a challenge flag, mini-challenge, or easter egg submission.
+ * Supports Challenge 0x01 (+25 Points), Easter Eggs (+50 Points), and Main Flags (+100 Points).
  */
 function processFlagSubmission(data) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const handle = String(data.handle || "").trim();
-  const week = parseInt(data.week) || 5;
+  const email = String(data.email || "").trim().toLowerCase();
+  const week = parseInt(data.week) || 4;
   const flag = String(data.flag || "").trim();
-  const isEasterEgg = Boolean(data.isEasterEgg);
+  const isEasterEgg = Boolean(data.isEasterEgg === true || data.isEasterEgg === "true" || String(data.isEasterEgg).toLowerCase() === "true");
+  const category = String(data.category || data.type || (isEasterEgg ? "Easter_Egg" : "Challenge_Flag")).trim();
+
+  // Determine points to award:
+  let pointsAwarded = parseInt(data.points || data.pointsAwarded) || 0;
+  if (!pointsAwarded) {
+    if (isEasterEgg) {
+      pointsAwarded = 50;
+    } else if (category.includes("0x01") || category.toLowerCase().includes("dom leak")) {
+      pointsAwarded = 25;
+    } else {
+      pointsAwarded = 100;
+    }
+  }
 
   if (!handle || !flag) {
     return { success: false, message: "Missing handle or token." };
   }
 
-  // Check Submissions_Log for duplicate claim
+  // 1. Setup / Check Submissions_Log tab
   let subSheet = ss.getSheetByName("Submissions_Log");
   if (!subSheet) {
     subSheet = ss.insertSheet("Submissions_Log");
-    subSheet.getRange("A1:E1").setValues([["Timestamp", "Week", "Handle", "Type", "Flag_Submitted"]]);
-    subSheet.getRange("A1:E1").setFontWeight("bold").setBackground("#1e293b").setFontColor("#f59e0b");
+    subSheet.getRange("A1:G1").setValues([["Timestamp", "Week", "Handle", "Email", "Category", "Points_Awarded", "Flag_Submitted"]]);
+    subSheet.getRange("A1:G1").setFontWeight("bold").setBackground("#1e293b").setFontColor("#f59e0b");
   }
 
   const subData = subSheet.getDataRange().getValues();
-  const submissionType = isEasterEgg ? "Easter_Egg" : "Challenge_Flag";
+  const headers = subData[0].map(h => String(h).toLowerCase().trim());
+  let colTime = 0, colWeek = 1, colHandle = 2, colEmail = -1, colCategory = 3, colPoints = -1, colFlag = 4;
 
+  for (let c = 0; c < headers.length; c++) {
+    const h = headers[c];
+    if (h.includes("time")) colTime = c;
+    else if (h.includes("week")) colWeek = c;
+    else if (h.includes("handle") || h.includes("alias")) colHandle = c;
+    else if (h.includes("email")) colEmail = c;
+    else if (h.includes("category") || h.includes("type")) colCategory = c;
+    else if (h.includes("point")) colPoints = c;
+    else if (h.includes("flag") || h.includes("token")) colFlag = c;
+  }
+
+  // 2. Anti-Duplicate Verification: Prevent duplicate point farming
   for (let i = 1; i < subData.length; i++) {
-    const loggedWeek = parseInt(subData[i][1]);
-    const loggedHandle = String(subData[i][2]).trim().toLowerCase();
-    const loggedType = String(subData[i][3]).trim();
+    const loggedHandle = String(subData[i][colHandle]).trim().toLowerCase();
+    const loggedEmail = (colEmail !== -1) ? String(subData[i][colEmail] || "").trim().toLowerCase() : "";
+    const loggedCat = (colCategory !== -1) ? String(subData[i][colCategory] || "").trim().toLowerCase() : "";
+    const loggedFlag = (colFlag !== -1) ? String(subData[i][colFlag] || "").trim().toLowerCase() : "";
 
-    if (loggedWeek === week && loggedHandle === handle.toLowerCase() && loggedType === submissionType) {
+    const isMatchUser = (loggedHandle === handle.toLowerCase()) || (email && loggedEmail && loggedEmail === email);
+    
+    // Check if this submission is for the same challenge/category
+    const isSameCategory = (loggedCat === category.toLowerCase()) ||
+      (category.toLowerCase().includes("0x01") && (loggedCat.includes("0x01") || loggedCat.includes("dom leak") || loggedFlag === flag.toLowerCase()));
+
+    if (isMatchUser && isSameCategory) {
       return {
         success: false,
-        message: "You have already claimed points for this " + (isEasterEgg ? "easter egg" : "challenge flag") + "!"
+        alreadyClaimed: true,
+        message: (category.toLowerCase().includes("0x01") || category.toLowerCase().includes("dom leak"))
+          ? "FLAG VERIFIED: You have already claimed points for this challenge."
+          : "You have already claimed points for this " + (isEasterEgg ? "easter egg" : "challenge flag") + "!"
       };
     }
   }
 
-  // Update Leaderboard
+  // 3. Update Master Leaderboard Sheet
   const lbSheet = ss.getSheetByName("Leaderboard") || ss.getSheetByName("Sheet1");
   const lbData = lbSheet.getDataRange().getValues();
   let studentFound = false;
-  let totalPoints = isEasterEgg ? 50 : 100;
+  let totalPoints = pointsAwarded;
 
   for (let i = 1; i < lbData.length; i++) {
     const lbHandle = String(lbData[i][0]).trim();
+    const lbEmail = String(lbData[i][1]).trim().toLowerCase();
 
-    if (lbHandle.toLowerCase() === handle.toLowerCase()) {
+    if (lbHandle.toLowerCase() === handle.toLowerCase() || (email && lbEmail === email)) {
       studentFound = true;
+      
+      // If email wasn't saved yet, save it
+      if (email && !lbEmail) {
+        lbSheet.getRange(i + 1, 2).setValue(email);
+      }
+
       const attendance = parseInt(lbData[i][2]) || 0;
       let challenges = parseInt(lbData[i][3]) || 0;
       let bonus = parseInt(lbData[i][4]) || 0;
 
-      if (isEasterEgg) {
-        bonus += 50;
-        lbSheet.getRange(i + 1, 5).setValue(bonus);
-      } else {
+      // Add points:
+      // If full challenge (+100 points): increment challenges
+      // If easter egg or custom challenge (+25, +50): increment bonus
+      if (pointsAwarded === 100 && !isEasterEgg) {
         challenges += 1;
         lbSheet.getRange(i + 1, 4).setValue(challenges);
+      } else {
+        bonus += pointsAwarded;
+        lbSheet.getRange(i + 1, 5).setValue(bonus);
       }
 
       totalPoints = (attendance * 50) + (challenges * 100) + bonus;
@@ -257,19 +305,26 @@ function processFlagSubmission(data) {
   }
 
   if (!studentFound) {
-    const challenges = isEasterEgg ? 0 : 1;
-    const bonus = isEasterEgg ? 50 : 0;
-    const tier = computeTier(totalPoints);
-    lbSheet.appendRow([handle, "", 0, challenges, bonus, totalPoints, tier]);
+    let challenges = (pointsAwarded === 100 && !isEasterEgg) ? 1 : 0;
+    let bonus = (pointsAwarded === 100 && !isEasterEgg) ? 0 : pointsAwarded;
+    const tier = computeTier(pointsAwarded);
+    lbSheet.appendRow([handle, email, 0, challenges, bonus, pointsAwarded, tier]);
   }
 
-  // Record in Submissions_Log
-  subSheet.appendRow([new Date(), week, handle, submissionType, flag]);
+  // 4. Record submission in Submissions_Log
+  const timestamp = data.timestamp ? new Date(data.timestamp) : new Date();
+  if (colEmail !== -1) {
+    subSheet.appendRow([timestamp, week, handle, email, category, pointsAwarded, flag]);
+  } else {
+    subSheet.appendRow([timestamp, week, handle, category, flag]);
+  }
 
   return {
     success: true,
-    message: isEasterEgg ? "Easter egg confirmed (+50 Bonus Points)!" : "Challenge flag confirmed (+100 Points)!",
-    pointsAwarded: isEasterEgg ? 50 : 100,
+    message: (category.toLowerCase().includes("0x01") || category.toLowerCase().includes("dom leak"))
+      ? "ACCESS GRANTED. +25 Points added to your profile!"
+      : (isEasterEgg ? "Easter egg confirmed (+50 Bonus Points)!" : "Challenge flag confirmed (+100 Points)!"),
+    pointsAwarded: pointsAwarded,
     totalPoints: totalPoints
   };
 }
@@ -416,8 +471,8 @@ function setupSheets() {
   let subSheet = ss.getSheetByName("Submissions_Log");
   if (!subSheet) {
     subSheet = ss.insertSheet("Submissions_Log");
-    subSheet.getRange("A1:E1").setValues([["Timestamp", "Week", "Handle", "Type", "Flag_Submitted"]]);
-    subSheet.getRange("A1:E1").setFontWeight("bold").setBackground("#1e293b").setFontColor("#f59e0b");
+    subSheet.getRange("A1:G1").setValues([["Timestamp", "Week", "Handle", "Email", "Category", "Points_Awarded", "Flag_Submitted"]]);
+    subSheet.getRange("A1:G1").setFontWeight("bold").setBackground("#1e293b").setFontColor("#f59e0b");
   }
   
   SpreadsheetApp.getUi().alert("Setup complete! Admin_Config, Attendance_Log, and Submissions_Log tabs have been created.");
