@@ -106,43 +106,46 @@ function hashSecret(secret, salt) {
 
 /**
  * Validates whether the provided token matches the Officer Preview Bypass Key.
- * Checks Admin_Config for Setting_Key: "Officer_Token" (plaintext or salted hash).
- * Defaults to built-in salted hash for "baysec_officer_2026".
+ * Strictly prioritizes live Admin_Config sheet (Setting_Key: "Officer_Token", "OfficerToken", "bypass_key", "preview_key").
+ * Any manual change to the passcode in the Google Sheet takes effect immediately.
+ * Defaults to built-in fallback only if no token is configured in Admin_Config.
  */
 function isOfficerTokenValid(token) {
   if (!token) return false;
   const trimmed = String(token).trim();
   if (!trimmed) return false;
 
-  // 1. Built-in default key check ("baysec_officer_2026")
-  const DEFAULT_OFFICER_TOKEN = "baysec_officer_2026";
-  const DEFAULT_OFFICER_HASH = "64ec1f49ef1312bbec3ccbab01f3ea11b2c0003d18784bc9fa4daab6d22a5214";
-  if (trimmed === DEFAULT_OFFICER_TOKEN || hashSecret(trimmed) === DEFAULT_OFFICER_HASH) {
-    return true;
-  }
-
-  // 2. Check Admin_Config sheet
+  // 1. Strictly prioritize live Admin_Config sheet lookup first
   try {
     const ss = SpreadsheetApp.getActiveSpreadsheet();
-    if (!ss) return false;
-    const configSheet = ss.getSheetByName("Admin_Config");
-    if (!configSheet) return false;
-
-    const data = configSheet.getDataRange().getValues();
-    for (let r = 0; r < data.length; r++) {
-      for (let c = 0; c < data[r].length; c++) {
-        const cellVal = String(data[r][c]).trim().toLowerCase();
-        if (cellVal === "officer_token" || cellVal === "officertoken" || cellVal === "bypass_key" || cellVal === "preview_key") {
-          const nextVal = (c + 1 < data[r].length) ? String(data[r][c + 1]).trim() : "";
-          if (nextVal) {
-            if (nextVal === trimmed || hashSecret(trimmed) === nextVal) {
-              return true;
+    if (ss) {
+      const configSheet = ss.getSheetByName("Admin_Config");
+      if (configSheet) {
+        const data = configSheet.getDataRange().getValues();
+        for (let r = 0; r < data.length; r++) {
+          for (let c = 0; c < data[r].length; c++) {
+            const cellVal = String(data[r][c]).trim().toLowerCase();
+            if (cellVal === "officer_token" || cellVal === "officertoken" || cellVal === "bypass_key" || cellVal === "preview_key") {
+              const nextVal = (c + 1 < data[r].length) ? String(data[r][c + 1]).trim() : "";
+              if (nextVal) {
+                // Live sheet config found! Strictly validate against this configured token (plaintext or hash).
+                return (nextVal === trimmed || hashSecret(trimmed) === nextVal);
+              }
             }
           }
         }
       }
     }
-  } catch (e) {}
+  } catch (e) {
+    Logger.log("Admin_Config officer token lookup warning: " + e.message);
+  }
+
+  // 2. Built-in default key check fallback ONLY if Admin_Config does not define an Officer_Token
+  const DEFAULT_OFFICER_TOKEN = "baysec_officer_2026";
+  const DEFAULT_OFFICER_HASH = "64ec1f49ef1312bbec3ccbab01f3ea11b2c0003d18784bc9fa4daab6d22a5214";
+  if (trimmed === DEFAULT_OFFICER_TOKEN || hashSecret(trimmed) === DEFAULT_OFFICER_HASH) {
+    return true;
+  }
 
   return false;
 }

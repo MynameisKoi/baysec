@@ -383,11 +383,32 @@
             text-align: center;
             display: flex;
             align-items: center;
-            justify-content: center;
-            gap: 8px;
+            justify-content: space-between;
+            gap: 12px;
+            flex-wrap: wrap;
             margin-bottom: 16px;
             box-shadow: 0 4px 15px rgba(168, 85, 247, 0.35);
             animation: fadeIn 0.3s ease;
+        }
+
+        .btn-exit-officer {
+            background: rgba(255, 255, 255, 0.18);
+            border: 1px solid rgba(255, 255, 255, 0.45);
+            color: #ffffff;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 0.76rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+            font-family: inherit;
+        }
+
+        .btn-exit-officer:hover {
+            background: rgba(255, 255, 255, 0.32);
+            border-color: #ffffff;
+            box-shadow: 0 0 8px rgba(255, 255, 255, 0.25);
         }
     </style>
 </head>
@@ -402,8 +423,11 @@
 
     <!-- Officer Preview Floating Indicator -->
     <div id="officerBanner" class="officer-banner" style="display: none;">
-        <span>🛠️</span>
-        <span><strong>[OFFICER PREVIEW MODE: ALL CHALLENGES UNLOCKED]</strong></span>
+        <div style="display: flex; align-items: center; gap: 8px;">
+            <span>🛠️</span>
+            <span><strong>[OFFICER PREVIEW MODE: ALL CHALLENGES UNLOCKED]</strong></span>
+        </div>
+        <button type="button" onclick="exitOfficerPreview()" class="btn-exit-officer">Exit Preview / View as Member</button>
     </div>
 
     <main class="checkin-card">
@@ -501,9 +525,12 @@
             pulseDot.className = "pulse-dot loading";
 
             const urlParams = new URLSearchParams(window.location.search);
-            const previewKey = urlParams.get('preview_key') || localStorage.getItem('baysec_officer_key') || '';
+            const previewKey = urlParams.get('preview_key') || localStorage.getItem('baysec_officer_token') || localStorage.getItem('baysec_officer_key') || '';
             if (urlParams.get('preview_key')) {
+                localStorage.setItem('baysec_officer_token', urlParams.get('preview_key'));
                 localStorage.setItem('baysec_officer_key', urlParams.get('preview_key'));
+                sessionStorage.setItem('baysec_officer_token', urlParams.get('preview_key'));
+                sessionStorage.setItem('baysec_officer_key', urlParams.get('preview_key'));
             }
 
             try {
@@ -524,7 +551,7 @@
                 }
 
                 // Toggle Officer Banner
-                const isOfficer = (data.isOfficer || previewKey === "baysec_officer_2026");
+                const isOfficer = !!data.isOfficer;
                 const officerBanner = document.getElementById('officerBanner');
                 if (isOfficer && officerBanner) {
                     officerBanner.style.display = "flex";
@@ -671,6 +698,17 @@
             statusTitle.innerHTML = (isSuccess ? "✅ " : "❌ ") + title;
             statusBody.innerHTML = message;
             statusBox.style.display = "block";
+        }
+
+        function exitOfficerPreview() {
+            localStorage.removeItem("baysec_officer_token");
+            localStorage.removeItem("baysec_officer_key");
+            sessionStorage.removeItem("baysec_officer_token");
+            sessionStorage.removeItem("baysec_officer_key");
+            const url = new URL(window.location.href);
+            url.searchParams.delete('preview_key');
+            window.history.replaceState({}, document.title, url.pathname + (url.search ? url.search : ''));
+            window.location.reload();
         }
 
         // Run dynamic session lookup on page load

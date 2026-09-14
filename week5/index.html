@@ -483,15 +483,135 @@
             background: linear-gradient(90deg, rgba(168, 85, 247, 0.95), rgba(99, 102, 241, 0.95));
             border-bottom: 1px solid #c084fc;
             color: #ffffff;
-            padding: 10px 16px;
+            padding: 10px 20px;
             font-size: 0.85rem;
             font-weight: 700;
             display: flex;
             align-items: center;
-            justify-content: center;
-            gap: 10px;
+            justify-content: space-between;
+            gap: 12px;
+            flex-wrap: wrap;
             box-shadow: 0 4px 20px rgba(168, 85, 247, 0.35);
             animation: fadeIn 0.3s ease;
+        }
+
+        .btn-exit-officer {
+            background: rgba(255, 255, 255, 0.18);
+            border: 1px solid rgba(255, 255, 255, 0.45);
+            color: #ffffff;
+            padding: 5px 12px;
+            border-radius: 6px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+            font-family: inherit;
+        }
+
+        .btn-exit-officer:hover {
+            background: rgba(255, 255, 255, 0.32);
+            border-color: #ffffff;
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.25);
+        }
+
+        /* Officer Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(4, 9, 20, 0.88);
+            backdrop-filter: blur(8px);
+            z-index: 100000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal-box {
+            background: #0f172a;
+            border: 1px solid rgba(168, 85, 247, 0.4);
+            border-radius: 12px;
+            box-shadow: 0 0 40px rgba(168, 85, 247, 0.2), 0 20px 40px rgba(0, 0, 0, 0.8);
+            max-width: 440px;
+            width: 100%;
+            padding: 28px;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 20px;
+        }
+
+        .modal-close-btn {
+            background: transparent;
+            border: none;
+            color: #94a3b8;
+            font-size: 1.5rem;
+            cursor: pointer;
+            line-height: 1;
+            padding: 0;
+        }
+
+        .modal-close-btn:hover {
+            color: #f8fafc;
+        }
+
+        .modal-input {
+            width: 100%;
+            background: #1e293b;
+            border: 1px solid #334155;
+            color: #f8fafc;
+            padding: 10px 14px;
+            border-radius: 6px;
+            font-family: inherit;
+            font-size: 0.95rem;
+            box-sizing: border-box;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        .modal-input:focus {
+            border-color: #a855f7;
+            box-shadow: 0 0 10px rgba(168, 85, 247, 0.3);
+        }
+
+        .modal-btn-primary {
+            border: none;
+            color: #ffffff;
+            font-weight: 700;
+            padding: 10px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+        }
+
+        .modal-btn-primary:hover {
+            opacity: 0.95;
+            box-shadow: 0 0 15px rgba(168, 85, 247, 0.4);
+        }
+
+        .modal-btn-secondary {
+            background: transparent;
+            border: 1px solid #475569;
+            color: #94a3b8;
+            padding: 10px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.2s;
+        }
+
+        .modal-btn-secondary:hover {
+            color: #f8fafc;
+            border-color: #94a3b8;
         }
 
         .challenge-gate-lock {
@@ -642,8 +762,30 @@
             <div class="lock-actions">
                 <a href="../week4/" class="btn-lock-primary">Go to Challenge 0x01 (Week 4) ➔</a>
                 <a href="../leaderboard.html" class="btn-lock-secondary">View League Standings</a>
-                <button type="button" onclick="promptOfficerBypass()" class="btn-lock-officer">🛠️ Officer Preview Login</button>
+                <button type="button" onclick="openOfficerModal()" class="btn-lock-officer">🛠️ Officer Preview Login</button>
             </div>
+        </div>
+    </div>
+
+    <!-- Officer Preview Login Modal -->
+    <div id="officerModal" class="modal-overlay" style="display: none;">
+        <div class="modal-box">
+            <div class="modal-header">
+                <div>
+                    <h3 style="margin: 0; color: #c084fc; font-size: 1.25rem;">🛠️ Officer Preview Login</h3>
+                    <p style="margin: 4px 0 0; color: #94a3b8; font-size: 0.82rem;">Unlock upcoming challenges and bypass session gating.</p>
+                </div>
+                <button type="button" onclick="closeOfficerModal()" class="modal-close-btn">&times;</button>
+            </div>
+            <div style="margin-bottom: 16px;">
+                <label style="display: block; color: #cbd5e1; font-size: 0.85rem; margin-bottom: 6px;">Officer Secret Token</label>
+                <input type="password" id="officerTokenInput" class="modal-input" placeholder="Enter officer authorization token" autocomplete="off" />
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <button type="button" onclick="closeOfficerModal()" class="modal-btn-secondary">Cancel</button>
+                <button type="button" onclick="saveOfficerToken()" class="modal-btn-primary" style="background: linear-gradient(135deg, #a855f7, #6366f1); flex: 1;">ENABLE PREVIEW MODE</button>
+            </div>
+            <div id="officerModalMsg" style="margin-top: 12px; font-size: 0.85rem;"></div>
         </div>
     </div>
 
@@ -678,89 +820,110 @@
 
     <!-- Officer Preview Floating Indicator -->
     <div id="officerBanner" class="officer-banner" style="display: none;">
-        <span>🛠️</span>
-        <span><strong>[OFFICER PREVIEW MODE: ALL CHALLENGES UNLOCKED]</strong></span>
+        <div style="display: flex; align-items: center; gap: 8px;">
+            <span>🛠️</span>
+            <span><strong>[OFFICER PREVIEW MODE: ALL CHALLENGES UNLOCKED]</strong></span>
+        </div>
+        <button type="button" onclick="exitOfficerPreview()" class="btn-exit-officer">Exit Preview / View as Member</button>
     </div>
 
-    <!-- Briefing Card -->
-    <section class="briefing-card">
-        <h1>Challenge 0x02: The Intercepted Uplink</h1>
-        <p>
-            An unencrypted telemetry uplink was captured on our internal laboratory subnet. An operator transmitted an authentication beacon to register their field station. 
-            Use the in-browser <strong>CyberShark Packet Analyzer</strong> below (or download the <code>.pcap</code> to inspect in desktop Wireshark) to filter protocol traffic, inspect the payload, and retrieve the flag token.
-        </p>
-    </section>
+    <!-- Main Challenge Container: Default-to-Deny (hidden on initial paint to eliminate 1-2s flash) -->
+    <main id="challengeMain" style="display: none;">
 
-    <!-- CyberShark Packet Analyzer Terminal -->
-    <section class="analyzer-container">
-        
-        <!-- Filter Toolbar -->
-        <div class="filter-toolbar">
-            <span class="filter-label">Filter:</span>
-            <input type="text" id="filterInput" class="filter-input" placeholder="Apply display filter (e.g. http, tcp, dns, port 8080)" oninput="applyFilter()" />
-            <button class="preset-btn active" onclick="setPreset('')">Clear</button>
-            <button class="preset-btn" onclick="setPreset('http')">http</button>
-            <button class="preset-btn" onclick="setPreset('dns')">dns</button>
-            <button class="preset-btn" onclick="setPreset('tcp')">tcp</button>
-            <button class="preset-btn" onclick="setPreset('8080')">port 8080</button>
-        </div>
+        <!-- Briefing Card -->
+        <section class="briefing-card">
+            <h1>Challenge 0x02: The Intercepted Uplink</h1>
+            <p>
+                An unencrypted telemetry uplink was captured on our internal laboratory subnet. An operator transmitted an authentication beacon to register their field station. 
+                Use the in-browser <strong>CyberShark Packet Analyzer</strong> below (or download the <code>.pcap</code> to inspect in desktop Wireshark) to filter protocol traffic, inspect the payload, and retrieve the flag token.
+            </p>
+        </section>
 
-        <!-- Packet List Table -->
-        <div class="packet-table-wrapper">
-            <table class="packet-table">
-                <thead>
-                    <tr>
-                        <th style="width: 45px;">No.</th>
-                        <th style="width: 80px;">Time</th>
-                        <th style="width: 140px;">Source</th>
-                        <th style="width: 140px;">Destination</th>
-                        <th style="width: 85px;">Protocol</th>
-                        <th style="width: 70px;">Length</th>
-                        <th>Info</th>
-                    </tr>
-                </thead>
-                <tbody id="packetTableBody">
-                    <!-- Populated dynamically by JavaScript -->
-                </tbody>
-            </table>
-        </div>
-
-        <!-- Packet Dissection & Hex Dump Split View -->
-        <div class="inspector-split">
+        <!-- CyberShark Packet Analyzer Terminal -->
+        <section class="analyzer-container">
             
-            <!-- Left: Protocol Tree Dissection -->
-            <div class="dissection-pane" id="dissectionPane">
-                <div style="color: var(--text-muted); font-style: italic; padding: 20px;">
-                    Select a packet from the list above to dissect its protocol headers and payload.
-                </div>
+            <!-- Filter Toolbar -->
+            <div class="filter-toolbar">
+                <span class="filter-label">Filter:</span>
+                <input type="text" id="filterInput" class="filter-input" placeholder="Apply display filter (e.g. http, tcp, dns, port 8080)" oninput="applyFilter()" />
+                <button class="preset-btn active" onclick="setPreset('')">Clear</button>
+                <button class="preset-btn" onclick="setPreset('http')">http</button>
+                <button class="preset-btn" onclick="setPreset('dns')">dns</button>
+                <button class="preset-btn" onclick="setPreset('tcp')">tcp</button>
+                <button class="preset-btn" onclick="setPreset('8080')">port 8080</button>
             </div>
 
-            <!-- Right: Hex & ASCII Dump -->
-            <div class="hexdump-pane" id="hexdumpPane">
-                <div style="color: var(--text-muted); font-style: italic; padding: 20px;">
-                    Raw packet bytes will appear here.
-                </div>
+            <!-- Packet List Table -->
+            <div class="packet-table-wrapper">
+                <table class="packet-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 45px;">No.</th>
+                            <th style="width: 80px;">Time</th>
+                            <th style="width: 140px;">Source</th>
+                            <th style="width: 140px;">Destination</th>
+                            <th style="width: 85px;">Protocol</th>
+                            <th style="width: 70px;">Length</th>
+                            <th>Info</th>
+                        </tr>
+                    </thead>
+                    <tbody id="packetTableBody">
+                        <!-- Populated dynamically by JavaScript -->
+                    </tbody>
+                </table>
             </div>
 
-        </div>
+            <!-- Packet Dissection & Hex Dump Split View -->
+            <div class="inspector-split">
+                
+                <!-- Left: Protocol Tree Dissection -->
+                <div class="dissection-pane" id="dissectionPane">
+                    <div style="color: var(--text-muted); font-style: italic; padding: 20px;">
+                        Select a packet from the list above to dissect its protocol headers and payload.
+                    </div>
+                </div>
 
-    </section>
+                <!-- Right: Hex & ASCII Dump -->
+                <div class="hexdump-pane" id="hexdumpPane">
+                    <div style="color: var(--text-muted); font-style: italic; padding: 20px;">
+                        Raw packet bytes will appear here.
+                    </div>
+                </div>
 
-    <!-- Submission Card -->
-    <section class="submission-card">
-        <h2 style="font-size: 1.3rem; margin-bottom: 6px;">Submit Authorization Flag</h2>
-        <p style="color: var(--text-muted); font-size: 0.9rem;">
-            Format: <code>sfbu{...}</code> • Recovered from the intercepted HTTP transmission.
-        </p>
+            </div>
 
-        <form class="submit-form" onsubmit="event.preventDefault(); verifyFlag();" style="display: flex; gap: 10px; flex-wrap: wrap;">
-            <input type="email" id="emailInput" class="input-token" placeholder="SFBU Student Email" style="max-width: 320px; flex: 1;" autocomplete="email" required />
-            <input type="text" id="flagInput" class="input-token" placeholder="Enter Flag sfbu{...} or Secret Token" autocomplete="off" style="flex: 2; min-width: 260px;" required />
-            <button type="submit" class="btn-submit" id="submitBtn">SUBMIT & CLAIM POINTS</button>
-        </form>
+        </section>
 
-        <div id="statusMsg"></div>
-    </section>
+        <!-- Submission Card -->
+        <section class="submission-card">
+            <h2 style="font-size: 1.3rem; margin-bottom: 6px;">Submit Authorization Flag</h2>
+            <p style="color: var(--text-muted); font-size: 0.9rem;">
+                Format: <code>sfbu{...}</code> • Recovered from the intercepted HTTP transmission.
+            </p>
+
+            <form class="submit-form" onsubmit="event.preventDefault(); verifyFlag();" style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <input type="email" id="emailInput" class="input-token" placeholder="SFBU Student Email" style="max-width: 320px; flex: 1;" autocomplete="email" required />
+                <input type="text" id="flagInput" class="input-token" placeholder="Enter Flag sfbu{...} or Secret Token" autocomplete="off" style="flex: 2; min-width: 260px;" required />
+                <button type="submit" class="btn-submit" id="submitBtn">SUBMIT & CLAIM POINTS</button>
+            </form>
+
+            <div id="statusMsg"></div>
+        </section>
+
+    </main>
+
+    <!-- Synchronous Gate Check: Default-to-Deny -->
+    <script>
+        (function() {
+            try {
+                const token = localStorage.getItem('baysec_officer_token') || localStorage.getItem('baysec_officer_key');
+                if (token && token.trim()) {
+                    const mainEl = document.getElementById('challengeMain');
+                    if (mainEl) mainEl.style.display = 'block';
+                }
+            } catch(e) {}
+        })();
+    </script>
 
     <!-- Script: Packet Data, Dissection & Verification -->
     <script>
@@ -1045,10 +1208,18 @@
         // Check active session, progressive gating, and officer preview mode
         async function checkSessionAndGate() {
             const urlParams = new URLSearchParams(window.location.search);
-            const previewKey = urlParams.get('preview_key') || localStorage.getItem('baysec_officer_key') || '';
+            const previewKey = urlParams.get('preview_key') || localStorage.getItem('baysec_officer_token') || localStorage.getItem('baysec_officer_key') || '';
             if (urlParams.get('preview_key')) {
+                localStorage.setItem('baysec_officer_token', urlParams.get('preview_key'));
                 localStorage.setItem('baysec_officer_key', urlParams.get('preview_key'));
+                sessionStorage.setItem('baysec_officer_token', urlParams.get('preview_key'));
+                sessionStorage.setItem('baysec_officer_key', urlParams.get('preview_key'));
             }
+
+            const challengeMain = document.getElementById("challengeMain");
+            const lockOverlay = document.getElementById("challengeGateLock");
+            const officerBanner = document.getElementById("officerBanner");
+            const simBanner = document.getElementById("simBanner");
 
             try {
                 const resp = await fetch(`${APPS_SCRIPT_URL}?action=get_active_session${previewKey ? `&preview_key=${encodeURIComponent(previewKey)}` : ''}`);
@@ -1056,39 +1227,102 @@
                     const data = await resp.json();
                     
                     // Sim Mode Banner
-                    const simBanner = document.getElementById("simBanner");
                     if (data.simMode && simBanner) {
                         simBanner.style.display = "flex";
                     }
 
                     // Officer Preview Banner
-                    const isOfficer = (data.isOfficer || previewKey === "baysec_officer_2026");
-                    const officerBanner = document.getElementById("officerBanner");
+                    const isOfficer = !!data.isOfficer;
                     if (isOfficer && officerBanner) {
                         officerBanner.style.display = "flex";
+                    } else if (officerBanner) {
+                        officerBanner.style.display = "none";
                     }
 
                     // Progressive Gating: Challenge 0x02 is for Week 5
                     const activeWeek = data.activeWeek || 4;
-                    const lockOverlay = document.getElementById("challengeGateLock");
-                    if (activeWeek < 5 && !isOfficer) {
-                        if (lockOverlay) lockOverlay.style.display = "flex";
-                    } else {
+                    if (isOfficer || activeWeek >= 5) {
+                        if (challengeMain) challengeMain.style.display = "block";
                         if (lockOverlay) lockOverlay.style.display = "none";
+                    } else {
+                        // Keep challenge strictly hidden & show locked overlay modal
+                        if (challengeMain) challengeMain.style.display = "none";
+                        if (lockOverlay) lockOverlay.style.display = "flex";
+                    }
+                } else {
+                    // Non-OK response: Default-to-deny if no local officer token
+                    const hasLocalToken = !!(localStorage.getItem('baysec_officer_token') || localStorage.getItem('baysec_officer_key'));
+                    if (!hasLocalToken) {
+                        if (challengeMain) challengeMain.style.display = "none";
+                        if (lockOverlay) lockOverlay.style.display = "flex";
                     }
                 }
             } catch (err) {
                 console.warn("Session check error:", err);
+                const hasLocalToken = !!(localStorage.getItem('baysec_officer_token') || localStorage.getItem('baysec_officer_key'));
+                if (!hasLocalToken) {
+                    if (challengeMain) challengeMain.style.display = "none";
+                    if (lockOverlay) lockOverlay.style.display = "flex";
+                }
             }
         }
         checkSessionAndGate();
 
-        function promptOfficerBypass() {
-            const key = prompt("Enter Officer Secret Token / Bypass Key (e.g. baysec_officer_2026):");
-            if (key) {
-                localStorage.setItem('baysec_officer_key', key.trim());
-                window.location.search = `?preview_key=${encodeURIComponent(key.trim())}`;
+        /* ==========================================================================
+           OFFICER PREVIEW / MODAL LOGIC & SESSION CONTROLS
+           ========================================================================== */
+        function openOfficerModal() {
+            const input = document.getElementById("officerTokenInput");
+            if (input) {
+                input.value = localStorage.getItem("baysec_officer_token") || localStorage.getItem("baysec_officer_key") || "";
             }
+            const msg = document.getElementById("officerModalMsg");
+            if (msg) msg.innerText = "";
+            const modal = document.getElementById("officerModal");
+            if (modal) modal.style.display = "flex";
+            if (input) input.focus();
+        }
+
+        function closeOfficerModal() {
+            const modal = document.getElementById("officerModal");
+            if (modal) modal.style.display = "none";
+        }
+
+        function saveOfficerToken() {
+            const input = document.getElementById("officerTokenInput");
+            const token = input ? input.value.trim() : "";
+            const msg = document.getElementById("officerModalMsg");
+            if (!token) {
+                if (msg) {
+                    msg.style.color = "#f87171";
+                    msg.innerText = "Please enter an officer authorization token.";
+                }
+                return;
+            }
+            localStorage.setItem("baysec_officer_token", token);
+            localStorage.setItem("baysec_officer_key", token);
+            sessionStorage.setItem("baysec_officer_token", token);
+            sessionStorage.setItem("baysec_officer_key", token);
+            if (msg) {
+                msg.style.color = "#4ade80";
+                msg.innerText = "Officer authorization saved! Unlocking preview...";
+            }
+            setTimeout(() => {
+                const url = new URL(window.location.href);
+                url.searchParams.set('preview_key', token);
+                window.location.href = url.toString();
+            }, 400);
+        }
+
+        function exitOfficerPreview() {
+            localStorage.removeItem("baysec_officer_token");
+            localStorage.removeItem("baysec_officer_key");
+            sessionStorage.removeItem("baysec_officer_token");
+            sessionStorage.removeItem("baysec_officer_key");
+            const url = new URL(window.location.href);
+            url.searchParams.delete('preview_key');
+            window.history.replaceState({}, document.title, url.pathname + (url.search ? url.search : ''));
+            window.location.reload();
         }
 
         async function verifyFlag() {
@@ -1115,7 +1349,7 @@
 
             localStorage.setItem("baysec_email", email);
 
-            const previewKey = localStorage.getItem('baysec_officer_key') || new URLSearchParams(window.location.search).get('preview_key') || '';
+            const previewKey = localStorage.getItem('baysec_officer_token') || localStorage.getItem('baysec_officer_key') || new URLSearchParams(window.location.search).get('preview_key') || '';
 
             submitBtn.disabled = true;
             submitBtn.innerText = "VERIFYING & CLAIMING...";
