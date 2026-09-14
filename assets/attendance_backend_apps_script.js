@@ -41,14 +41,26 @@ function doPost(e) {
   }
 }
 
-// Handle GET requests (health check or manual admin verification)
+// Handle GET requests (100% CORS-friendly for all web clients)
 function doGet(e) {
-  const config = getAdminConfig();
-  return createJsonResponse({
-    status: "online",
-    activeWeek: config.activeWeek,
-    checkinOpen: config.isOpen
-  });
+  try {
+    if (e && e.parameter && e.parameter.action) {
+      if (e.parameter.action === "checkin") {
+        return createJsonResponse(processCheckin(e.parameter));
+      }
+      if (e.parameter.action === "submit_flag") {
+        return createJsonResponse(processFlagSubmission(e.parameter));
+      }
+    }
+    const config = getAdminConfig();
+    return createJsonResponse({
+      status: "online",
+      activeWeek: config.activeWeek,
+      checkinOpen: config.isOpen
+    });
+  } catch (err) {
+    return createJsonResponse({ success: false, message: "Server error: " + err.toString() });
+  }
 }
 
 /**
@@ -56,26 +68,26 @@ function doGet(e) {
  */
 function processCheckin(data) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const config = getAdminConfig();
-  
   const studentWeek = parseInt(data.week) || 0;
+  const config = getAdminConfig(studentWeek);
+  
   const handle = String(data.handle || "").trim();
   const email = String(data.email || "").trim().toLowerCase();
   const submittedPasscode = String(data.passcode || "").trim().toUpperCase();
   
-  // 1. GATE 1: Is Check-In Open?
+  // 1. GATE 1: Did we find configuration for this week?
+  if (!config.found) {
+    return {
+      success: false,
+      message: "Week " + studentWeek + " is not configured in the Admin_Config sheet tab."
+    };
+  }
+
+  // 2. GATE 2: Is Check-In Open for this week?
   if (!config.isOpen) {
     return {
       success: false,
-      message: "Check-in is currently closed. Attendance can only be claimed while a meeting is in session."
-    };
-  }
-  
-  // 2. GATE 2: Week Match
-  if (studentWeek !== config.activeWeek) {
-    return {
-      success: false,
-      message: "Active session is Week " + config.activeWeek + ". You cannot submit attendance for Week " + studentWeek + "."
+      message: "Check-in for Week " + studentWeek + " is currently CLOSED (marked FALSE in Admin_Config). Ask an officer in the room to open check-in."
     };
   }
   
@@ -83,7 +95,7 @@ function processCheckin(data) {
   if (submittedPasscode !== config.passcode.toUpperCase()) {
     return {
       success: false,
-      message: "Invalid meeting passcode. Look at the slide projected in the room!"
+      message: "Invalid meeting passcode for Week " + studentWeek + ". (Hint: check the slide projected on the screen!)"
     };
   }
   
@@ -240,8 +252,9 @@ function processFlagSubmission(data) {
 
 /**
  * Reads config safely from Admin_Config sheet (completely private to admin).
+ * Supports multiple rows: e.g. Row 2 for Week 4, Row 3 for Week 5, etc.
  */
-function getAdminConfig() {
+function getAdminConfig(targetWeek) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const configSheet = ss.getSheetByName("Admin_Config");
   
@@ -249,15 +262,47 @@ function getAdminConfig() {
     return {
       activeWeek: 5,
       passcode: "WIRESHARK",
-      isOpen: true
+      isOpen: true,
+      found: true
     };
   }
   
-  const activeWeek = parseInt(configSheet.getRange("A2").getValue()) || 5;
-  const passcode = String(configSheet.getRange("B2").getValue() || "WIRESHARK").trim();
-  const isOpen = Boolean(configSheet.getRange("C2").getValue() !== false);
+  const data = configSheet.getDataRange().getValues();
+  // Headers: [Active_Week, Current_Passcode, Is_Checkin_Open]
+
+  // If a specific targetWeek was requested (e.g. Week 5):
+  if (targetWeek) {
+    for (let i = 1; i < data.length; i++) {
+      const rowWeek = parseInt(data[i][0]);
+      if (rowWeek === parseInt(targetWeek)) {
+        const passcode = String(data[i][1] || "").trim();
+        const isOpen = (String(data[i][2]).toUpperCase() === "TRUE" || data[i][2] === true);
+        return { activeWeek: rowWeek, passcode: passcode, isOpen: isOpen, found: true };
+      }
+    }
+    // Target week row not found in Admin_Config
+    return { activeWeek: parseInt(targetWeek), passcode: "", isOpen: false, found: false };
+  }
+
+  // Otherwise, find the currently active week (first row where Is_Checkin_Open is TRUE)
+  for (let i = 1; i < data.length; i++) {
+    const rowWeek = parseInt(data[i][0]);
+    const passcode = String(data[i][1] || "").trim();
+    const isOpen = (String(data[i][2]).toUpperCase() === "TRUE" || data[i][2] === true);
+    if (isOpen) {
+      return { activeWeek: rowWeek, passcode: passcode, isOpen: true, found: true };
+    }
+  }
+
+  // Fallback to row 2
+  if (data.length > 1) {
+    const rowWeek = parseInt(data[1][0]) || 5;
+    const passcode = String(data[1][1] || "").trim();
+    const isOpen = (String(data[1][2]).toUpperCase() === "TRUE" || data[1][2] === true);
+    return { activeWeek: rowWeek, passcode: passcode, isOpen: isOpen, found: true };
+  }
   
-  return { activeWeek, passcode, isOpen };
+  return { activeWeek: 5, passcode: "WIRESHARK", isOpen: true, found: true };
 }
 
 function computeTier(points) {

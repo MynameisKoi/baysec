@@ -925,18 +925,15 @@
                 return;
             }
             try {
-                await fetch(APPS_SCRIPT_URL, {
-                    method: "POST",
-                    headers: { "Content-Type": "text/plain;charset=utf-8" },
-                    body: JSON.stringify({
-                        action: action,
-                        week: 5,
-                        handle: handle,
-                        flag: flag,
-                        isEasterEgg: isEasterEgg,
-                        timestamp: new Date().toISOString()
-                    })
+                const queryParams = new URLSearchParams({
+                    action: action,
+                    week: 5,
+                    handle: handle,
+                    flag: flag,
+                    isEasterEgg: isEasterEgg,
+                    timestamp: new Date().toISOString()
                 });
+                await fetch(`${APPS_SCRIPT_URL}?${queryParams.toString()}`);
             } catch (err) {
                 console.warn("Leaderboard sync skipped:", err);
             }

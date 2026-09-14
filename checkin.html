@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -7,7 +8,9 @@
     <link rel="icon" type="image/png" href="assets/baysec-blue.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600;700&family=Outfit:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600;700&family=Outfit:wght@300;400;600;700;800&display=swap"
+        rel="stylesheet">
     <style>
         :root {
             --bg: #0b0f19;
@@ -112,8 +115,17 @@
         }
 
         @keyframes pulse {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.4; transform: scale(0.8); }
+
+            0%,
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+
+            50% {
+                opacity: 0.4;
+                transform: scale(0.8);
+            }
         }
 
         h1 {
@@ -224,8 +236,15 @@
         }
 
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(-6px); }
-            to { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(-6px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .status-box.success {
@@ -252,8 +271,13 @@
             gap: 6px;
         }
 
-        .status-box.success .status-title { color: var(--green); }
-        .status-box.error .status-title { color: var(--red); }
+        .status-box.success .status-title {
+            color: var(--green);
+        }
+
+        .status-box.error .status-title {
+            color: var(--red);
+        }
 
         .status-body {
             font-size: 0.85rem;
@@ -293,10 +317,13 @@
         }
 
         @keyframes spin {
-            to { transform: rotate(360deg); }
+            to {
+                transform: rotate(360deg);
+            }
         }
     </style>
 </head>
+
 <body>
 
     <main class="checkin-card">
@@ -307,14 +334,16 @@
                 <span id="weekLabel">WEEK 5 ATTENDANCE</span>
             </div>
             <h1>BaySec Check-In</h1>
-            <p class="subtitle">Enter your details and today's meeting passcode from the projector screen to claim your attendance points.</p>
+            <p class="subtitle">Enter your details and today's meeting passcode from the projector screen to claim your
+                attendance points.</p>
         </header>
 
         <form id="checkinForm" onsubmit="handleCheckin(event)">
             <div class="form-group">
                 <label for="handleInput">Hacker Alias / Handle</label>
                 <div class="input-wrapper">
-                    <input type="text" id="handleInput" class="input-box" placeholder="e.g. 0xViper or your first name" required autocomplete="username" />
+                    <input type="text" id="handleInput" class="input-box" placeholder="e.g. 0xViper or your first name"
+                        required autocomplete="username" />
                 </div>
                 <div class="hint-text">Matches your handle on the seasonal leaderboard.</div>
             </div>
@@ -322,7 +351,8 @@
             <div class="form-group">
                 <label for="emailInput">SFBU Student Email</label>
                 <div class="input-wrapper">
-                    <input type="email" id="emailInput" class="input-box" placeholder="e.g. student@student.sfbu.edu" required autocomplete="email" />
+                    <input type="email" id="emailInput" class="input-box" placeholder="e.g. student@student.sfbu.edu"
+                        required autocomplete="email" />
                 </div>
                 <div class="hint-text">Used for prize redemption and official club roster.</div>
             </div>
@@ -330,7 +360,8 @@
             <div class="form-group">
                 <label for="passcodeInput">Meeting Verification Passcode</label>
                 <div class="input-wrapper">
-                    <input type="text" id="passcodeInput" class="input-box code-input" placeholder="DISPLAYED ON PROJECTOR" required autocomplete="off" />
+                    <input type="text" id="passcodeInput" class="input-box code-input"
+                        placeholder="DISPLAYED ON PROJECTOR" required autocomplete="off" />
                 </div>
                 <div class="hint-text">Announced live during today's session. Rotates every meeting.</div>
             </div>
@@ -407,21 +438,21 @@
             }
 
             try {
-                // Post to Google Apps Script Web App
-                const payload = {
+                // Send GET request with parameters (100% CORS-friendly across all mobile & desktop browsers)
+                const queryParams = new URLSearchParams({
                     action: "checkin",
                     week: currentWeekNum,
                     handle: handle,
                     email: email,
                     passcode: passcode,
                     timestamp: new Date().toISOString()
-                };
-
-                const response = await fetch(APPS_SCRIPT_URL, {
-                    method: "POST",
-                    headers: { "Content-Type": "text/plain;charset=utf-8" }, // avoids CORS preflight issues with Apps Script
-                    body: JSON.stringify(payload)
                 });
+
+                const response = await fetch(`${APPS_SCRIPT_URL}?${queryParams.toString()}`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status} from authentication server`);
+                }
 
                 const result = await response.json();
 
@@ -444,7 +475,7 @@
                 showStatus(
                     false,
                     "CONNECTION ERROR",
-                    "Could not reach the authentication server. Please ensure you are connected to internet, or notify an officer in the room."
+                    `Could not reach the authentication server (${err.message || err}). Please check your internet connection or verify Google Apps Script deployment settings.`
                 );
             } finally {
                 submitBtn.disabled = false;
@@ -464,4 +495,5 @@
         }
     </script>
 </body>
+
 </html>
