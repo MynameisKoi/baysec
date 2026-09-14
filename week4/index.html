@@ -262,12 +262,42 @@
         .card-footer a:hover {
             text-decoration: underline;
         }
+        /* Staging / Simulation Banner */
+        .sim-banner {
+            width: 100%;
+            max-width: 540px;
+            background: linear-gradient(90deg, rgba(245, 158, 11, 0.22), rgba(239, 68, 68, 0.22));
+            border: 1px solid #f59e0b;
+            color: #fef08a;
+            padding: 10px 16px;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 0.82rem;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 16px;
+            box-shadow: 0 4px 15px rgba(245, 158, 11, 0.25);
+            animation: fadeIn 0.3s ease;
+        }
+
+        .sim-banner strong {
+            color: #fbbf24;
+        }
     </style>
 </head>
 
 <body>
 
     <!-- The flag is here: c2ZidXt3M2xjMG0zX3QwX2I0eXMzY18yMDI2fQ== -->
+
+    <!-- Staging / Simulation Warning Banner -->
+    <div id="simBanner" class="sim-banner" style="display: none;">
+        <span>⚠️</span>
+        <span><strong>[STAGING / SIMULATION MODE ACTIVE]</strong> — Sandbox Gateway</span>
+    </div>
 
     <div class="terminal-card">
         <div class="logo-container">
@@ -314,12 +344,23 @@
     <script>
         const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzQO2sZyXWsUtTgpHzbGy5MLTyV-0-kQlnqddTG3SjwDcOMKsjrA7p5kwBjc_tJ7do_Cg/exec";
 
-        // Pre-fill saved handle / email from previous sessions
-        document.addEventListener("DOMContentLoaded", () => {
+        // Pre-fill saved handle / email and check environment
+        document.addEventListener("DOMContentLoaded", async () => {
             const savedAlias = localStorage.getItem("baysec_alias") || localStorage.getItem("baysec_handle");
             const savedEmail = localStorage.getItem("baysec_email");
             if (savedAlias) document.getElementById("handleInput").value = savedAlias;
             if (savedEmail) document.getElementById("emailInput").value = savedEmail;
+
+            try {
+                const resp = await fetch(`${APPS_SCRIPT_URL}?action=status`);
+                if (resp.ok) {
+                    const data = await resp.json();
+                    const simBanner = document.getElementById("simBanner");
+                    if (data.simMode && simBanner) {
+                        simBanner.style.display = "flex";
+                    }
+                }
+            } catch(e) {}
         });
 
         function toggleLogoTheme() {

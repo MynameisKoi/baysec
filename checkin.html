@@ -347,10 +347,40 @@
                 transform: rotate(360deg);
             }
         }
+        /* Staging / Simulation Banner */
+        .sim-banner {
+            width: 100%;
+            max-width: 480px;
+            background: linear-gradient(90deg, rgba(245, 158, 11, 0.22), rgba(239, 68, 68, 0.22));
+            border: 1px solid #f59e0b;
+            color: #fef08a;
+            padding: 10px 16px;
+            border-radius: 8px;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.82rem;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 16px;
+            box-shadow: 0 4px 15px rgba(245, 158, 11, 0.25);
+            animation: fadeIn 0.3s ease;
+        }
+
+        .sim-banner strong {
+            color: #fbbf24;
+        }
     </style>
 </head>
 
 <body>
+
+    <!-- Staging / Simulation Warning Banner -->
+    <div id="simBanner" class="sim-banner" style="display: none;">
+        <span>⚠️</span>
+        <span><strong>[STAGING / SIMULATION MODE ACTIVE]</strong> — Sandbox Check-In</span>
+    </div>
 
     <main class="checkin-card">
         <header class="brand-header">
@@ -451,6 +481,14 @@
 
                 const data = await response.json();
                 const isOpen = (data.isOpen === true || data.checkinOpen === true);
+
+                // Toggle Staging / Simulation Banner
+                const simBanner = document.getElementById('simBanner');
+                if (data.simMode) {
+                    if (simBanner) simBanner.style.display = "flex";
+                } else {
+                    if (simBanner) simBanner.style.display = "none";
+                }
 
                 if (isOpen && data.activeWeek) {
                     activeSession.isOpen = true;

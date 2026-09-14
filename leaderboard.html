@@ -507,6 +507,28 @@
             text-decoration: none;
         }
 
+        /* Staging / Simulation Banner */
+        .sim-banner {
+            background: linear-gradient(90deg, rgba(245, 158, 11, 0.22), rgba(239, 68, 68, 0.22));
+            border-bottom: 2px solid #f59e0b;
+            color: #fef08a;
+            padding: 12px 20px;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.88rem;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            box-shadow: 0 4px 20px rgba(245, 158, 11, 0.25);
+            animation: fadeIn 0.3s ease;
+        }
+
+        .sim-banner strong {
+            color: #fbbf24;
+            letter-spacing: 0.5px;
+        }
+
         @media (max-width: 820px) {
             .podium {
                 grid-template-columns: 1fr;
@@ -546,6 +568,12 @@
             ⚡ Quick Check-In
         </a>
     </nav>
+
+    <!-- Staging / Simulation Warning Banner -->
+    <div id="simBanner" class="sim-banner" style="display: none;">
+        <span>⚠️</span>
+        <span><strong>[STAGING / SIMULATION MODE ACTIVE]</strong> — You are viewing sandbox test standings. Live production data is isolated.</span>
+    </div>
 
     <!-- Main Container -->
     <main class="container">
@@ -629,28 +657,17 @@
     <script>
         /**
          * -------------------------------------------------------------------
-         * GOOGLE SHEET SYNC CONFIGURATION
+         * LEAGUE SCORING & GOOGLE SHEET INTEGRATION
          * -------------------------------------------------------------------
-         * To connect your live Google Sheet:
-         * 1. Open your Google Sheet
-         * 2. Go to File -> Share -> Publish to web
-         * 3. Select your sheet tab, choose 'Comma-separated values (.csv)', click Publish
-         * 4. Paste the published CSV URL below!
          */
+        const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzQO2sZyXWsUtTgpHzbGy5MLTyV-0-kQlnqddTG3SjwDcOMKsjrA7p5kwBjc_tJ7do_Cg/exec";
         const GOOGLE_SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vT_eco82kiGO8TiAT-pMYYNZ_YPYpyIna3N1tp1-krYCUFaOWZ2aKkfGQYrP8uG8QE9t239JXOT_QsJ/pub?gid=403173859&single=true&output=csv";
 
-        // Default / Kickoff fallback data
+        // Initial Production Standings Seed: Verified solvers of the initial teaser/welcome cipher ("BaySec is here")
         const fallbackMembers = [
-            { handle: "0xViper", attendance: 1, challenges: 1, bonus: 0, points: 150, tier: "Operator" },
-            { handle: "CyberKoi", attendance: 1, challenges: 1, bonus: 0, points: 150, tier: "Operator" },
-            { handle: "BitPhantom", attendance: 1, challenges: 1, bonus: 0, points: 150, tier: "Operator" },
-            { handle: "NetStalker", attendance: 1, challenges: 0, bonus: 0, points: 50, tier: "Initiate" },
-            { handle: "ZeroTrace", attendance: 1, challenges: 0, bonus: 0, points: 50, tier: "Initiate" },
-            { handle: "MatrixRebel", attendance: 1, challenges: 0, bonus: 0, points: 50, tier: "Initiate" },
-            { handle: "NullPointer", attendance: 1, challenges: 0, bonus: 0, points: 50, tier: "Initiate" },
-            { handle: "EchoBreaker", attendance: 1, challenges: 0, bonus: 0, points: 50, tier: "Initiate" },
-            { handle: "ByteHawk", attendance: 1, challenges: 0, bonus: 0, points: 50, tier: "Initiate" },
-            { handle: "RootAdmin", attendance: 1, challenges: 0, bonus: 0, points: 50, tier: "Initiate" }
+            { handle: "gle48724", email: "gle48724@student.sfbu.edu", attendance: 0, challenges: 0, bonus: 25, points: 25, tier: "Initiate", aliasSet: false },
+            { handle: "rikhlas4480", email: "rikhlas4480@student.sfbu.edu", attendance: 0, challenges: 0, bonus: 25, points: 25, tier: "Initiate", aliasSet: false },
+            { handle: "dmertl25494", email: "dmertl25494@student.sfbu.edu", attendance: 0, challenges: 0, bonus: 25, points: 25, tier: "Initiate", aliasSet: false }
         ];
 
         let currentMembers = [];
@@ -676,40 +693,74 @@
                 const row = lines[i].split(',').map(c => c.trim());
                 if (row.length < 2 || !row[0]) continue;
 
-                // Expected columns: Handle, Email, Attendance_Count, Challenges_Solved, Bonus_Points, Total_Points, Tier
+                // Expected columns: Handle, Email, Attendance_Count, Challenges_Solved, Bonus_Points, Total_Points, Tier, Alias_Set
                 const handle = row[0] || "Hacker";
+                const email = row[1] || "";
                 const attendance = parseInt(row[2]) || 0;
                 const challenges = parseInt(row[3]) || 0;
                 const bonus = parseInt(row[4]) || 0;
                 const points = parseInt(row[5]) || (attendance * 50 + challenges * 100 + bonus);
                 const tier = getTier(row[6], points);
+                const aliasSet = (row[7] === "true" || row[7] === "TRUE");
 
-                results.push({ handle, attendance, challenges, bonus, points, tier });
+                results.push({ handle, email, attendance, challenges, bonus, points, tier, aliasSet });
             }
             return results;
         }
 
         async function loadLeaderboardData() {
+            const simBanner = document.getElementById('simBanner');
+            const syncStatus = document.getElementById('syncStatus');
+
+            // 1. Primary Sync: Live query to Google Apps Script API (supports sandbox / production routing)
+            if (APPS_SCRIPT_URL && !APPS_SCRIPT_URL.includes("REPLACE_WITH_YOUR_DEPLOYED_SCRIPT_URL")) {
+                try {
+                    if (syncStatus) syncStatus.innerText = "Syncing live with BaySec Engine...";
+                    const resp = await fetch(`${APPS_SCRIPT_URL}?action=get_leaderboard`);
+                    if (resp.ok) {
+                        const data = await resp.json();
+
+                        // Toggle Staging / Simulation Banner
+                        if (data.simMode) {
+                            if (simBanner) simBanner.style.display = "flex";
+                            if (syncStatus) syncStatus.innerText = "⚠️ [STAGING / SIMULATION MODE ACTIVE]";
+                        } else {
+                            if (simBanner) simBanner.style.display = "none";
+                            if (syncStatus) syncStatus.innerText = "Live Synced with Google Sheets";
+                        }
+
+                        if (data.leaderboard && data.leaderboard.length > 0) {
+                            currentMembers = data.leaderboard;
+                            renderAll();
+                            return;
+                        }
+                    }
+                } catch (apiErr) {
+                    console.warn("Apps Script API query failed, trying CSV fallback:", apiErr);
+                }
+            }
+
+            // 2. Secondary Sync: Published CSV from Google Sheets
             if (GOOGLE_SHEET_CSV_URL && GOOGLE_SHEET_CSV_URL.trim() !== "") {
                 try {
-                    document.getElementById('syncStatus').innerText = "Syncing live with Google Sheets...";
+                    if (syncStatus) syncStatus.innerText = "Syncing live with Google Sheets (CSV)...";
                     const resp = await fetch(GOOGLE_SHEET_CSV_URL);
-                    if (!resp.ok) throw new Error("Failed to fetch sheet");
+                    if (!resp.ok) throw new Error("Failed to fetch sheet CSV");
                     const csvText = await resp.text();
                     const parsed = parseCSV(csvText);
                     if (parsed.length > 0) {
                         currentMembers = parsed.sort((a, b) => b.points - a.points);
-                        document.getElementById('syncStatus').innerText = "Live Synced with Google Sheets";
+                        if (syncStatus) syncStatus.innerText = "Live Synced with Google Sheets";
                         renderAll();
                         return;
                     }
                 } catch (err) {
                     console.warn("Could not load Google Sheet CSV, falling back to local registry data:", err);
-                    document.getElementById('syncStatus').innerText = "Offline Mode (Local Registry Data)";
+                    if (syncStatus) syncStatus.innerText = "Offline Mode (Local Registry Data)";
                 }
             }
 
-            // Fallback
+            // 3. Guaranteed Fallback: Verified Cipher Solvers Seed
             currentMembers = [...fallbackMembers].sort((a, b) => b.points - a.points);
             renderAll();
         }
