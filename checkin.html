@@ -103,6 +103,13 @@
             text-transform: uppercase;
             letter-spacing: 0.5px;
             margin-bottom: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .week-pill.closed {
+            background: rgba(239, 68, 68, 0.1);
+            color: #fca5a5;
+            border-color: rgba(239, 68, 68, 0.3);
         }
 
         .pulse-dot {
@@ -112,6 +119,18 @@
             background: var(--cyan);
             box-shadow: 0 0 8px var(--cyan);
             animation: pulse 1.8s infinite;
+            transition: all 0.3s ease;
+        }
+
+        .pulse-dot.closed {
+            background: var(--red);
+            box-shadow: 0 0 8px var(--red);
+            animation: none;
+        }
+
+        .pulse-dot.loading {
+            background: var(--amber);
+            box-shadow: 0 0 8px var(--amber);
         }
 
         @keyframes pulse {
@@ -185,6 +204,13 @@
         .input-box:focus {
             border-color: var(--cyan);
             box-shadow: 0 0 12px var(--cyan-glow);
+        }
+
+        .input-box:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            background: #060910;
+            border-color: #1a2234;
         }
 
         .hint-text {
@@ -329,9 +355,9 @@
     <main class="checkin-card">
         <header class="brand-header">
             <img src="assets/baysec-blue.png" alt="BaySec Crest" class="brand-logo" />
-            <div class="week-pill">
-                <span class="pulse-dot"></span>
-                <span id="weekLabel">WEEK 5 ATTENDANCE</span>
+            <div class="week-pill" id="weekPill">
+                <span class="pulse-dot loading" id="pulseDot" style="font-size: 0; line-height: 0;">•</span>
+                <span id="weekLabel">CONNECTING...</span>
             </div>
             <h1>BaySec Check-In</h1>
             <p class="subtitle">Enter your details and today's meeting passcode from the projector screen to claim your
@@ -386,18 +412,94 @@
         // =========================================================================
         // CONFIGURATION
         // =========================================================================
-        // Paste your deployed Google Apps Script Web App URL below:
-        // Format: https://script.google.com/macros/s/AKfycb.../exec
+        // Google Apps Script Web App URL
         const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzQO2sZyXWsUtTgpHzbGy5MLTyV-0-kQlnqddTG3SjwDcOMKsjrA7p5kwBjc_tJ7do_Cg/exec";
 
-        // Read week parameter from URL: ?w=5 or default to 5
-        const urlParams = new URLSearchParams(window.location.search);
-        const currentWeekNum = parseInt(urlParams.get('w')) || 5;
-        document.getElementById('weekLabel').innerText = `WEEK ${currentWeekNum} ATTENDANCE`;
+        // Active session context dynamically resolved from Google Sheet Admin_Config
+        let activeSession = {
+            isOpen: false,
+            activeWeek: null
+        };
 
-        // If URL contains pre-filled handle or code (e.g. from saved profile)
+        // If URL contains pre-filled handle (e.g. from saved bookmark / query parameter)
+        const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.get('handle')) {
             document.getElementById('handleInput').value = urlParams.get('handle');
+        }
+
+        /**
+         * Dynamically queries the currently active meeting session from Admin_Config
+         */
+        async function fetchActiveSession() {
+            const weekLabel = document.getElementById('weekLabel');
+            const weekPill = document.getElementById('weekPill');
+            const pulseDot = document.getElementById('pulseDot');
+            const submitBtn = document.getElementById('submitBtn');
+            const handleInput = document.getElementById('handleInput');
+            const emailInput = document.getElementById('emailInput');
+            const passcodeInput = document.getElementById('passcodeInput');
+
+            // Set loading state
+            weekLabel.innerText = "CONNECTING...";
+            pulseDot.className = "pulse-dot loading";
+
+            try {
+                const response = await fetch(`${APPS_SCRIPT_URL}?action=get_active_session`);
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status} from authentication server`);
+                }
+
+                const data = await response.json();
+                const isOpen = (data.isOpen === true || data.checkinOpen === true);
+
+                if (isOpen && data.activeWeek) {
+                    activeSession.isOpen = true;
+                    activeSession.activeWeek = data.activeWeek;
+
+                    weekPill.className = "week-pill";
+                    pulseDot.className = "pulse-dot";
+                    weekLabel.innerText = `WEEK ${data.activeWeek} ATTENDANCE`;
+
+                    handleInput.disabled = false;
+                    emailInput.disabled = false;
+                    passcodeInput.disabled = false;
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<span>CLAIM +50 LEAGUE POINTS</span>';
+                } else {
+                    activeSession.isOpen = false;
+                    activeSession.activeWeek = null;
+
+                    weekPill.className = "week-pill closed";
+                    pulseDot.className = "pulse-dot closed";
+                    weekLabel.innerText = "CHECK-IN CLOSED";
+
+                    handleInput.disabled = true;
+                    emailInput.disabled = true;
+                    passcodeInput.disabled = true;
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = '<span>CHECK-IN CURRENTLY CLOSED</span>';
+
+                    showStatus(
+                        false,
+                        "SESSION STATUS",
+                        "Check-in is currently CLOSED. No active meeting session is open right now."
+                    );
+                }
+            } catch (err) {
+                console.error("Session query error:", err);
+                activeSession.isOpen = false;
+                activeSession.activeWeek = null;
+
+                weekPill.className = "week-pill closed";
+                pulseDot.className = "pulse-dot closed";
+                weekLabel.innerText = "CONNECTION ERROR";
+
+                showStatus(
+                    false,
+                    "CONNECTION ERROR",
+                    `Could not reach the authentication server (${err.message || err}). Please check your internet connection.`
+                );
+            }
         }
 
         async function handleCheckin(e) {
@@ -405,14 +507,22 @@
 
             const submitBtn = document.getElementById('submitBtn');
             const statusBox = document.getElementById('statusBox');
-            const statusTitle = document.getElementById('statusTitle');
-            const statusBody = document.getElementById('statusBody');
+
+            // Gate: Ensure an active session is currently open
+            if (!activeSession.isOpen || !activeSession.activeWeek) {
+                showStatus(
+                    false,
+                    "CHECK-IN CLOSED",
+                    "Check-in is currently CLOSED. No active meeting session is open right now."
+                );
+                return;
+            }
 
             const handle = document.getElementById('handleInput').value.trim();
             const email = document.getElementById('emailInput').value.trim();
             const passcode = document.getElementById('passcodeInput').value.trim().toUpperCase();
 
-            // Client-side quick check
+            // Client-side validation
             if (!handle || !email || !passcode) {
                 showStatus(false, "MISSING FIELDS", "Please fill in all fields including the meeting passcode.");
                 return;
@@ -423,25 +533,11 @@
             submitBtn.innerHTML = '<div class="spinner"></div><span>VERIFYING CREDENTIALS...</span>';
             statusBox.style.display = "none";
 
-            // If backend script URL has not been replaced yet, run in demo/setup mode:
-            if (APPS_SCRIPT_URL.includes("REPLACE_WITH_YOUR_DEPLOYED_SCRIPT_URL")) {
-                setTimeout(() => {
-                    submitBtn.disabled = false;
-                    submitBtn.innerHTML = '<span>CLAIM +50 LEAGUE POINTS</span>';
-                    showStatus(
-                        true,
-                        "GATEWAY READY (SETUP MODE)",
-                        `Validated locally for <strong>${handle}</strong> (Week ${currentWeekNum}). To enable live Google Sheet sync, paste your deployed Google Apps Script URL into checkin.html.`
-                    );
-                }, 800);
-                return;
-            }
-
             try {
-                // Send GET request with parameters (100% CORS-friendly across all mobile & desktop browsers)
+                // Send GET request with dynamically resolved activeWeek
                 const queryParams = new URLSearchParams({
                     action: "checkin",
-                    week: currentWeekNum,
+                    week: activeSession.activeWeek,
                     handle: handle,
                     email: email,
                     passcode: passcode,
@@ -457,10 +553,11 @@
                 const result = await response.json();
 
                 if (result.success) {
+                    const loggedWeek = result.activeWeek || activeSession.activeWeek;
                     showStatus(
                         true,
                         "ATTENDANCE VERIFIED!",
-                        `+50 Points successfully credited to <strong>${handle}</strong> for Week ${currentWeekNum}. Your new total is <strong>${result.totalPoints || 'updated'} pts</strong>! Check the leaderboard to see your rank.`
+                        `+50 Points successfully credited to <strong>${handle}</strong> for Week ${loggedWeek}. Your new total is <strong>${result.totalPoints || 'updated'} pts</strong>! Check the leaderboard to see your rank.`
                     );
                     document.getElementById('checkinForm').reset();
                 } else {
@@ -475,11 +572,13 @@
                 showStatus(
                     false,
                     "CONNECTION ERROR",
-                    `Could not reach the authentication server (${err.message || err}). Please check your internet connection or verify Google Apps Script deployment settings.`
+                    `Could not reach the authentication server (${err.message || err}). Please check your internet connection.`
                 );
             } finally {
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = '<span>CLAIM +50 LEAGUE POINTS</span>';
+                if (activeSession.isOpen) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<span>CLAIM +50 LEAGUE POINTS</span>';
+                }
             }
         }
 
@@ -493,6 +592,9 @@
             statusBody.innerHTML = message;
             statusBox.style.display = "block";
         }
+
+        // Run dynamic session lookup on page load
+        document.addEventListener('DOMContentLoaded', fetchActiveSession);
     </script>
 </body>
 

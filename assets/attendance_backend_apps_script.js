@@ -51,12 +51,28 @@ function doGet(e) {
       if (e.parameter.action === "submit_flag") {
         return createJsonResponse(processFlagSubmission(e.parameter));
       }
+      if (e.parameter.action === "get_active_session" || e.parameter.action === "status") {
+        const session = getActiveSessionConfig();
+        return createJsonResponse({
+          status: "online",
+          isOpen: session.isOpen,
+          checkinOpen: session.isOpen,
+          activeWeek: session.activeWeek,
+          message: session.isOpen
+            ? "Active session open."
+            : (session.message || "Check-in is currently CLOSED. No active meeting session is open right now.")
+        });
+      }
     }
-    const config = getAdminConfig();
+    const session = getActiveSessionConfig();
     return createJsonResponse({
       status: "online",
-      activeWeek: config.activeWeek,
-      checkinOpen: config.isOpen
+      isOpen: session.isOpen,
+      checkinOpen: session.isOpen,
+      activeWeek: session.activeWeek,
+      message: session.isOpen
+        ? "Active session open."
+        : (session.message || "Check-in is currently CLOSED. No active meeting session is open right now.")
     });
   } catch (err) {
     return createJsonResponse({ success: false, message: "Server error: " + err.toString() });
@@ -65,62 +81,69 @@ function doGet(e) {
 
 /**
  * Process and authenticate an incoming student check-in.
+ * Dynamically resolves the active session from Admin_Config.
  */
 function processCheckin(data) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const studentWeek = parseInt(data.week) || 0;
-  const config = getAdminConfig(studentWeek);
+  const session = getActiveSessionConfig();
+  
+  // 1. GATE 1: Is check-in currently open for any session?
+  if (!session.isOpen || !session.activeWeek) {
+    return {
+      success: false,
+      message: session.message || "Check-in is currently CLOSED. No active meeting session is open right now."
+    };
+  }
+
+  const activeWeek = session.activeWeek;
+  const validPasscode = session.passcode;
   
   const handle = String(data.handle || "").trim();
   const email = String(data.email || "").trim().toLowerCase();
   const submittedPasscode = String(data.passcode || "").trim().toUpperCase();
   
-  // 1. GATE 1: Did we find configuration for this week?
-  if (!config.found) {
+  if (!handle || !email || !submittedPasscode) {
     return {
       success: false,
-      message: "Week " + studentWeek + " is not configured in the Admin_Config sheet tab."
+      message: "Please fill in all fields (handle, email, and passcode)."
     };
   }
 
-  // 2. GATE 2: Is Check-In Open for this week?
-  if (!config.isOpen) {
+  // 2. GATE 2: Passcode Verification against valid_passcode
+  if (submittedPasscode !== validPasscode.toUpperCase()) {
     return {
       success: false,
-      message: "Check-in for Week " + studentWeek + " is currently CLOSED (marked FALSE in Admin_Config). Ask an officer in the room to open check-in."
+      message: "Invalid meeting passcode for Week " + activeWeek + ". (Hint: check the slide projected on the screen!)"
     };
   }
   
-  // 3. GATE 3: Passcode Verification (Never stored on GitHub!)
-  if (submittedPasscode !== config.passcode.toUpperCase()) {
-    return {
-      success: false,
-      message: "Invalid meeting passcode for Week " + studentWeek + ". (Hint: check the slide projected on the screen!)"
-    };
+  // 3. GATE 3: Anti-Duplicate Verification for the specific active_week
+  let logSheet = ss.getSheetByName("Attendance_Log");
+  if (!logSheet) {
+    logSheet = ss.insertSheet("Attendance_Log");
+    logSheet.getRange("A1:E1").setValues([["Timestamp", "Week", "Handle", "Email", "Submitted_Passcode"]]);
+    logSheet.getRange("A1:E1").setFontWeight("bold").setBackground("#1e293b").setFontColor("#4ade80");
   }
-  
-  // 4. GATE 4: Anti-Duplicate Verification
-  const logSheet = ss.getSheetByName("Attendance_Log");
+
   const logData = logSheet.getDataRange().getValues();
-  
   for (let i = 1; i < logData.length; i++) {
     const loggedWeek = parseInt(logData[i][1]);
     const loggedHandle = String(logData[i][2]).trim().toLowerCase();
     const loggedEmail = String(logData[i][3]).trim().toLowerCase();
     
-    if (loggedWeek === studentWeek && (loggedHandle === handle.toLowerCase() || (email && loggedEmail === email))) {
+    if (loggedWeek === activeWeek && (loggedHandle === handle.toLowerCase() || (email && loggedEmail === email))) {
       return {
         success: false,
-        message: "You have already checked in for Week " + studentWeek + "! Each student may only claim points once per meeting."
+        message: "You have already checked in for Week " + activeWeek + "! Each student may only claim points once per meeting."
       };
     }
   }
   
-  // 5. SUCCESS: Record in Attendance_Log
+  // 4. Log attendance record under dynamically resolved active_week
   const timestamp = new Date();
-  logSheet.appendRow([timestamp, studentWeek, handle, email, submittedPasscode]);
+  logSheet.appendRow([timestamp, activeWeek, handle, email, submittedPasscode]);
   
-  // 6. UPDATE MASTER LEADERBOARD SHEET
+  // 5. UPDATE MASTER LEADERBOARD SHEET
   const lbSheet = ss.getSheetByName("Leaderboard") || ss.getSheetByName("Sheet1");
   const lbData = lbSheet.getDataRange().getValues();
   let studentFound = false;
@@ -159,7 +182,8 @@ function processCheckin(data) {
   
   return {
     success: true,
-    message: "Attendance confirmed.",
+    message: "Attendance confirmed for Week " + activeWeek + ".",
+    activeWeek: activeWeek,
     totalPoints: totalPoints
   };
 }
@@ -251,58 +275,104 @@ function processFlagSubmission(data) {
 }
 
 /**
- * Reads config safely from Admin_Config sheet (completely private to admin).
- * Supports multiple rows: e.g. Row 2 for Week 4, Row 3 for Week 5, etc.
+ * Dynamically queries the currently active meeting session from the Admin_Config sheet.
+ * Scans for the row where Is_Checkin_Open == TRUE (boolean true or case-insensitive "TRUE").
+ * Does NOT hardcode or fallback to Week 5.
  */
-function getAdminConfig(targetWeek) {
+function getActiveSessionConfig() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const configSheet = ss.getSheetByName("Admin_Config");
   
   if (!configSheet) {
     return {
-      activeWeek: 5,
-      passcode: "WIRESHARK",
-      isOpen: true,
-      found: true
+      isOpen: false,
+      checkinOpen: false,
+      activeWeek: null,
+      passcode: "",
+      message: "Check-in is currently CLOSED. No active meeting session is open right now."
     };
   }
   
   const data = configSheet.getDataRange().getValues();
-  // Headers: [Active_Week, Current_Passcode, Is_Checkin_Open]
+  if (data.length <= 1) {
+    return {
+      isOpen: false,
+      checkinOpen: false,
+      activeWeek: null,
+      passcode: "",
+      message: "Check-in is currently CLOSED. No active meeting session is open right now."
+    };
+  }
 
-  // If a specific targetWeek was requested (e.g. Week 5):
-  if (targetWeek) {
-    for (let i = 1; i < data.length; i++) {
-      const rowWeek = parseInt(data[i][0]);
-      if (rowWeek === parseInt(targetWeek)) {
-        const passcode = String(data[i][1] || "").trim();
-        const isOpen = (String(data[i][2]).toUpperCase() === "TRUE" || data[i][2] === true);
-        return { activeWeek: rowWeek, passcode: passcode, isOpen: isOpen, found: true };
-      }
+  // Detect column mapping based on header row:
+  // Expected headers: Active_Week (0), Current_Passcode (1), Is_Checkin_Open (2)
+  let colWeek = 0;
+  let colPasscode = 1;
+  let colIsOpen = 2;
+
+  const headers = data[0];
+  for (let c = 0; c < headers.length; c++) {
+    const h = String(headers[c]).trim().toLowerCase();
+    if (h === "active_week" || h === "week") colWeek = c;
+    else if (h === "current_passcode" || h === "passcode") colPasscode = c;
+    else if (h === "is_checkin_open" || h === "is_open" || h === "open") colIsOpen = c;
+  }
+
+  // Scan for the row where Is_Checkin_Open == TRUE
+  for (let i = 1; i < data.length; i++) {
+    const rawOpen = data[i][colIsOpen];
+    const isOpen = (rawOpen === true || String(rawOpen).trim().toUpperCase() === "TRUE");
+    if (isOpen) {
+      const activeWeek = parseInt(data[i][colWeek]);
+      const validPasscode = String(data[i][colPasscode] || "").trim();
+      return {
+        isOpen: true,
+        checkinOpen: true,
+        activeWeek: activeWeek,
+        passcode: validPasscode,
+        message: "Active session found."
+      };
     }
-    // Target week row not found in Admin_Config
+  }
+
+  // If no row has Is_Checkin_Open == TRUE:
+  return {
+    isOpen: false,
+    checkinOpen: false,
+    activeWeek: null,
+    passcode: "",
+    message: "Check-in is currently CLOSED. No active meeting session is open right now."
+  };
+}
+
+/**
+ * Reads config safely from Admin_Config sheet.
+ * If targetWeek is specified, checks that row.
+ * If targetWeek is omitted, delegates to getActiveSessionConfig().
+ */
+function getAdminConfig(targetWeek) {
+  if (!targetWeek) {
+    return getActiveSessionConfig();
+  }
+
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const configSheet = ss.getSheetByName("Admin_Config");
+  
+  if (!configSheet) {
     return { activeWeek: parseInt(targetWeek), passcode: "", isOpen: false, found: false };
   }
-
-  // Otherwise, find the currently active week (first row where Is_Checkin_Open is TRUE)
+  
+  const data = configSheet.getDataRange().getValues();
   for (let i = 1; i < data.length; i++) {
     const rowWeek = parseInt(data[i][0]);
-    const passcode = String(data[i][1] || "").trim();
-    const isOpen = (String(data[i][2]).toUpperCase() === "TRUE" || data[i][2] === true);
-    if (isOpen) {
-      return { activeWeek: rowWeek, passcode: passcode, isOpen: true, found: true };
+    if (rowWeek === parseInt(targetWeek)) {
+      const passcode = String(data[i][1] || "").trim();
+      const isOpen = (data[i][2] === true || String(data[i][2]).trim().toUpperCase() === "TRUE");
+      return { activeWeek: rowWeek, passcode: passcode, isOpen: isOpen, found: true };
     }
   }
 
-  // Fallback to row 2
-  if (data.length > 1) {
-    const rowWeek = parseInt(data[1][0]) || 5;
-    const passcode = String(data[1][1] || "").trim();
-    const isOpen = (String(data[1][2]).toUpperCase() === "TRUE" || data[1][2] === true);
-    return { activeWeek: rowWeek, passcode: passcode, isOpen: isOpen, found: true };
-  }
-  
-  return { activeWeek: 5, passcode: "WIRESHARK", isOpen: true, found: true };
+  return { activeWeek: parseInt(targetWeek), passcode: "", isOpen: false, found: false };
 }
 
 function computeTier(points) {
