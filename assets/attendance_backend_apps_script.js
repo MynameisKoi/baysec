@@ -133,10 +133,20 @@ function isSimModeActive() {
  */
 function getTableNames() {
   const isSim = isSimModeActive();
+  let attSheet = isSim ? "Attendance_Sim" : "Attendance";
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    if (!isSim && ss) {
+      if (!ss.getSheetByName("Attendance") && ss.getSheetByName("Attendance_Log")) {
+        attSheet = "Attendance_Log";
+      }
+    }
+  } catch (e) {}
+
   return {
     isSim: isSim,
     leaderboard: isSim ? "Leaderboard_Sim" : "Leaderboard",
-    attendance: isSim ? "Attendance_Sim" : "Attendance_Log",
+    attendance: attSheet,
     submissions: isSim ? "Submissions_Sim" : "Submissions_Log"
   };
 }
