@@ -1011,12 +1011,18 @@
             const officerFooterBtn = document.getElementById('officerFooterBtn');
 
             const urlParams = new URLSearchParams(window.location.search);
-            const previewKey = urlParams.get('preview_key') || localStorage.getItem('baysec_officer_token') || localStorage.getItem('baysec_officer_key') || '';
-            if (urlParams.get('preview_key')) {
-                localStorage.setItem('baysec_officer_token', urlParams.get('preview_key'));
-                localStorage.setItem('baysec_officer_key', urlParams.get('preview_key'));
-                sessionStorage.setItem('baysec_officer_token', urlParams.get('preview_key'));
-                sessionStorage.setItem('baysec_officer_key', urlParams.get('preview_key'));
+            const previewKey = urlParams.get('preview_key') || urlParams.get('token') || localStorage.getItem('baysec_officer_token') || localStorage.getItem('baysec_officer_key') || '';
+            if (urlParams.get('preview_key') || urlParams.get('token')) {
+                const rawKey = urlParams.get('preview_key') || urlParams.get('token');
+                localStorage.setItem('baysec_officer_token', rawKey);
+                localStorage.setItem('baysec_officer_key', rawKey);
+                sessionStorage.setItem('baysec_officer_token', rawKey);
+                sessionStorage.setItem('baysec_officer_key', rawKey);
+            }
+
+            if (window.location.search.includes('preview_key') || window.location.search.includes('token')) {
+                var cleanUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+                window.history.replaceState({ path: cleanUrl }, document.title, cleanUrl);
             }
 
             // 1. Primary Sync: Live query to Google Apps Script API (supports sandbox / production routing)
@@ -1368,9 +1374,7 @@
                         msg.innerText = "Officer authorization verified! Reloading...";
                     }
                     setTimeout(() => {
-                        const url = new URL(window.location.href);
-                        url.searchParams.set('preview_key', key);
-                        window.location.href = url.toString();
+                        window.location.reload();
                     }, 400);
                 } else {
                     localStorage.removeItem("baysec_officer_token");

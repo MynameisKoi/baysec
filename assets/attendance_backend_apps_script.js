@@ -104,18 +104,61 @@ function hashSecret(secret, salt) {
   return hex;
 }
 
+// Rate Limiting Configuration (CacheService)
+const RATE_LIMIT_WINDOW = 300; // 5-minute sliding window (seconds)
+const MAX_RATE_LIMIT_ATTEMPTS = 5; // Maximum attempts allowed before blocking
+
+/**
+ * Checks whether an identifier (email) is rate limited for a specific action.
+ */
+function isRateLimited(action, identifier) {
+  if (!identifier) return false;
+  try {
+    const cache = CacheService.getScriptCache();
+    const key = "rl_" + action + "_" + String(identifier).trim().toLowerCase();
+    const count = parseInt(cache.get(key) || "0", 10);
+    return count >= MAX_RATE_LIMIT_ATTEMPTS;
+  } catch (e) {
+    return false;
+  }
+}
+
+/**
+ * Increments the rate limit attempt counter for an identifier.
+ */
+function recordRateLimitAttempt(action, identifier) {
+  if (!identifier) return;
+  try {
+    const cache = CacheService.getScriptCache();
+    const key = "rl_" + action + "_" + String(identifier).trim().toLowerCase();
+    const count = parseInt(cache.get(key) || "0", 10) + 1;
+    cache.put(key, String(count), RATE_LIMIT_WINDOW);
+  } catch (e) {}
+}
+
+/**
+ * Clears the rate limit counter upon successful authentication / solving.
+ */
+function clearRateLimit(action, identifier) {
+  if (!identifier) return;
+  try {
+    const cache = CacheService.getScriptCache();
+    cache.remove("rl_" + action + "_" + String(identifier).trim().toLowerCase());
+  } catch (e) {}
+}
+
 /**
  * Validates whether the provided token matches the Officer Preview Bypass Key.
- * Strictly prioritizes live Admin_Config sheet (Setting_Key: "Officer_Token", "OfficerToken", "bypass_key", "preview_key").
- * Any manual change to the passcode in the Google Sheet takes effect immediately.
- * Defaults to built-in fallback only if no token is configured in Admin_Config.
+ * Strictly checks the live Admin_Config sheet (Setting_Key: "Officer_Token", "OfficerToken", "bypass_key", "preview_key").
+ * FAIL-CLOSED: If Admin_Config is empty, missing, whitespace, or unavailable, returns false.
+ * Zero hardcoded fallback keys or hashes are permitted.
  */
 function isOfficerTokenValid(token) {
   if (!token) return false;
   const trimmed = String(token).trim();
   if (!trimmed) return false;
 
-  // 1. Strictly prioritize live Admin_Config sheet lookup first
+  // Strictly check live Admin_Config sheet lookup
   try {
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     if (ss) {
@@ -140,13 +183,7 @@ function isOfficerTokenValid(token) {
     Logger.log("Admin_Config officer token lookup warning: " + e.message);
   }
 
-  // 2. Built-in default key check fallback ONLY if Admin_Config does not define an Officer_Token
-  const DEFAULT_OFFICER_TOKEN = "baysec_officer_2026";
-  const DEFAULT_OFFICER_HASH = "64ec1f49ef1312bbec3ccbab01f3ea11b2c0003d18784bc9fa4daab6d22a5214";
-  if (trimmed === DEFAULT_OFFICER_TOKEN || hashSecret(trimmed) === DEFAULT_OFFICER_HASH) {
-    return true;
-  }
-
+  // Strict Fail-Closed: Never allow unauthorized access if Admin_Config is empty or missing
   return false;
 }
 
@@ -175,23 +212,31 @@ function isSimModeActive() {
 }
 
 /**
- * Resolves simulation mode:
- * 1. Checks client query parameters (e.parameter.sim_mode) and body payload (payload.sim_mode).
- * 2. If client supplied a parameter:
- *    const isSim = (e.parameter && e.parameter.sim_mode === "true") || (payload && payload.sim_mode === true);
- * 3. Fallback to Admin_Config sheet's Sim_Mode cell ONLY if the client did not supply a parameter.
+ * Server-Side Domain Enforcement for Staging/Production Routing:
+ * 1. Do NOT trust client-supplied parameters (e.g., sim_mode=false) to determine the database target.
+ * 2. Inspect request headers to verify caller origin:
+ *    var origin = (e && e.headers) ? (e.headers['Origin'] || e.headers['origin'] || e.headers['Referer'] || e.headers['referer'] || '') : '';
+ *    var isProdOrigin = origin.indexOf('baysec.vercel.app') !== -1 || origin.indexOf('baysec.sfbu.edu') !== -1;
+ *    var isSim = !isProdOrigin;
+ * 3. Disallow unauthorized non-production domains from writing to live production tables under any circumstances.
+ *    If on prod origin, client can opt into sim mode if sim_mode === "true" or ?sim=1.
  */
 function resolveSimMode(e, payload) {
-  const paramSim = (e && e.parameter && e.parameter.sim_mode !== undefined) ? e.parameter.sim_mode : (e && e.sim_mode !== undefined ? e.sim_mode : undefined);
-  const payloadSim = (payload && payload.sim_mode !== undefined) ? payload.sim_mode : undefined;
+  var origin = (e && e.headers) ? (e.headers['Origin'] || e.headers['origin'] || e.headers['Referer'] || e.headers['referer'] || '') : '';
+  var isProdOrigin = origin.indexOf('baysec.vercel.app') !== -1 || origin.indexOf('baysec.sfbu.edu') !== -1;
+  var isSim = !isProdOrigin;
 
-  if (paramSim !== undefined || payloadSim !== undefined) {
-    const isParamTrue = (paramSim === "true" || paramSim === true || paramSim === 1 || paramSim === "1");
-    const isPayloadTrue = (payloadSim === true || payloadSim === "true" || payloadSim === 1 || payloadSim === "1");
-    return Boolean(isParamTrue || isPayloadTrue);
+  // If request originates from production, allow opt-in simulation mode if explicitly requested (?sim=1 or sim_mode=true)
+  if (isProdOrigin) {
+    var clientSimParam = (e && e.parameter && e.parameter.sim_mode !== undefined) ? e.parameter.sim_mode : (e && e.sim_mode !== undefined ? e.sim_mode : undefined);
+    var payloadSim = (payload && payload.sim_mode !== undefined) ? payload.sim_mode : undefined;
+    if (clientSimParam === "true" || clientSimParam === true || clientSimParam === 1 || clientSimParam === "1" ||
+        payloadSim === true || payloadSim === "true" || payloadSim === 1 || payloadSim === "1") {
+      isSim = true;
+    }
   }
 
-  return isSimModeActive();
+  return isSim;
 }
 
 /**
@@ -561,6 +606,15 @@ function processFlagSubmission(data, tablesOrE) {
     return { success: false, message: "Invalid email format. Please provide your SFBU student email." };
   }
 
+  // Rate Limiting Protection: Max 5 attempts per 5-minute sliding window
+  if (isRateLimited("submit", email)) {
+    return {
+      success: false,
+      error: "RATE_LIMITED: Too many attempts. Please wait 5 minutes before trying again.",
+      message: "RATE_LIMITED: Too many attempts. Please wait 5 minutes before trying again."
+    };
+  }
+
   // 1. Match challenge via salted SHA-256 hash
   const submittedHash = hashSecret(submittedToken);
   let matchedChallenge = null;
@@ -584,6 +638,7 @@ function processFlagSubmission(data, tablesOrE) {
   }
 
   if (!matchedChallenge) {
+    recordRateLimitAttempt("submit", email);
     return {
       success: false,
       message: "ACCESS DENIED: Invalid flag format or incorrect payload token."
@@ -601,6 +656,7 @@ function processFlagSubmission(data, tablesOrE) {
   const activeWeek = activeSession.activeWeek || 4;
 
   if (challengeWeek > activeWeek && !isOfficer) {
+    recordRateLimitAttempt("submit", email);
     return {
       success: false,
       isLocked: true,
@@ -631,6 +687,7 @@ function processFlagSubmission(data, tablesOrE) {
 
     // Check unique constraint per student email
     if (loggedEmail === email && loggedChallenge === challengeId.toLowerCase()) {
+      clearRateLimit("submit", email);
       return {
         success: false,
         alreadyClaimed: true,
@@ -727,6 +784,8 @@ function processFlagSubmission(data, tablesOrE) {
   } else {
     displayMessage = "ACCESS GRANTED. +" + pointsAwarded + " Points credited to " + resolvedHandle + "!";
   }
+
+  clearRateLimit("submit", email);
 
   return {
     success: true,
@@ -835,6 +894,16 @@ function requestAliasOtp(data) {
   if (!email || !email.includes("@")) {
     return { success: false, message: "Please provide a valid SFBU student email." };
   }
+
+  // Rate Limiting Protection: Max 5 attempts per 5-minute sliding window
+  if (isRateLimited("otp", email)) {
+    return {
+      success: false,
+      error: "RATE_LIMITED: Too many attempts. Please wait 5 minutes before trying again.",
+      message: "RATE_LIMITED: Too many attempts. Please wait 5 minutes before trying again."
+    };
+  }
+  recordRateLimitAttempt("otp", email);
 
   // Generate 4-digit numeric OTP (1000 - 9999)
   const otp = String(Math.floor(1000 + Math.random() * 9000));
