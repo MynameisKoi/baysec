@@ -1287,7 +1287,7 @@
             const simBanner = document.getElementById("simBanner");
 
             try {
-                const simParam = `&sim_mode=${SIM_MODE ? 'true' : 'false'}`;
+                const simParam = `&sim_mode=${SIM_MODE ? 'true' : 'false'}&client_domain=${encodeURIComponent(window.location.hostname)}`;
                 const resp = await fetch(`${APPS_SCRIPT_URL}?action=get_active_session${simParam}${previewKey ? `&preview_key=${encodeURIComponent(previewKey)}` : ''}`);
                 if (resp.ok) {
                     const data = await resp.json();
@@ -1375,7 +1375,7 @@
 
             try {
                 // NEVER save to storage before server verification
-                const resp = await fetch(`${APPS_SCRIPT_URL}?action=verify_officer_token&sim_mode=${SIM_MODE ? 'true' : 'false'}&token=${encodeURIComponent(token)}`);
+                const resp = await fetch(`${APPS_SCRIPT_URL}?action=verify_officer_token&sim_mode=${SIM_MODE ? 'true' : 'false'}&client_domain=${encodeURIComponent(window.location.hostname)}&token=${encodeURIComponent(token)}`);
                 const result = await resp.json();
 
                 if (result && result.valid === true) {
@@ -1470,6 +1470,7 @@
                 const queryParams = new URLSearchParams({
                     action: "submit_flag",
                     sim_mode: SIM_MODE ? "true" : "false",
+                    client_domain: window.location.hostname,
                     challenge_id: "challenge_0x02",
                     week: 5,
                     email: email,

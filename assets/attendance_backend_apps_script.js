@@ -81,6 +81,7 @@ function onOpen() {
     .createMenu("🛡️ BaySec Admin")
     .addItem("Reset & Seed Production Leaderboard", "migrateVerifiedSolvers")
     .addItem("Setup Simulation / Staging Tables", "setupSimulationTables")
+    .addItem("Clear Staging Attendance (Attendance_Sim)", "clearSimulationAttendance")
     .addItem("Initialize All Sheets", "setupSheets")
     .addToUi();
 }
@@ -212,36 +213,73 @@ function isSimModeActive() {
 }
 
 /**
- * Server-Side Domain Enforcement for Staging/Production Routing:
- * 1. Do NOT trust client-supplied parameters (e.g., sim_mode=false) to determine the database target.
- * 2. Inspect request headers to verify caller origin:
- *    var origin = (e && e.headers) ? (e.headers['Origin'] || e.headers['origin'] || e.headers['Referer'] || e.headers['referer'] || '') : '';
- *    var isProdOrigin = origin.indexOf('baysec.vercel.app') !== -1 || origin.indexOf('baysec.sfbu.edu') !== -1;
- *    var isSim = !isProdOrigin;
- * 3. Disallow unauthorized non-production domains from writing to live production tables under any circumstances.
- *    If on prod origin, client can opt into sim mode if sim_mode === "true" or ?sim=1.
+ * Reads a single configuration key value from Admin_Config sheet.
  */
-function resolveSimMode(e, payload) {
-  var origin = (e && e.headers) ? (e.headers['Origin'] || e.headers['origin'] || e.headers['Referer'] || e.headers['referer'] || '') : '';
-  var isProdOrigin = origin.indexOf('baysec.vercel.app') !== -1 || origin.indexOf('baysec.sfbu.edu') !== -1;
-  var isSim = !isProdOrigin;
+function getAdminConfigValue(targetKey) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    if (!ss) return null;
+    const configSheet = ss.getSheetByName("Admin_Config");
+    if (!configSheet) return null;
 
-  // If request originates from production, allow opt-in simulation mode if explicitly requested (?sim=1 or sim_mode=true)
-  if (isProdOrigin) {
-    var clientSimParam = (e && e.parameter && e.parameter.sim_mode !== undefined) ? e.parameter.sim_mode : (e && e.sim_mode !== undefined ? e.sim_mode : undefined);
-    var payloadSim = (payload && payload.sim_mode !== undefined) ? payload.sim_mode : undefined;
-    if (clientSimParam === "true" || clientSimParam === true || clientSimParam === 1 || clientSimParam === "1" ||
-        payloadSim === true || payloadSim === "true" || payloadSim === 1 || payloadSim === "1") {
-      isSim = true;
+    const data = configSheet.getDataRange().getValues();
+    const searchKey = String(targetKey).trim().toLowerCase();
+    for (let r = 0; r < data.length; r++) {
+      for (let c = 0; c < data[r].length; c++) {
+        const cellVal = String(data[r][c]).trim().toLowerCase();
+        if (cellVal === searchKey) {
+          return (c + 1 < data[r].length) ? data[r][c + 1] : null;
+        }
+      }
     }
-  }
-
-  return isSim;
+  } catch (err) {}
+  return null;
 }
 
 /**
+ * Resolves whether Simulation/Staging mode is active:
+ * 1. Check explicit parameter from client (sim_mode)
+ * 2. Check client domain (client_domain)
+ * 3. Check Origin / Referer headers if present
+ * 4. Default fallback: Read Sim_Mode key from Admin_Config sheet
+ * Defaults to false (production) if not specified.
+ */
+function resolveIsSimMode(e, payload) {
+  // 1. Check explicit parameter from client
+  var clientSim = (e && e.parameter && e.parameter.sim_mode) || (payload && payload.sim_mode);
+  if (clientSim === "false" || clientSim === false) {
+    return false;
+  }
+  if (clientSim === "true" || clientSim === true) {
+    return true;
+  }
+
+  // 2. Check client domain
+  var clientDomain = (e && e.parameter && e.parameter.client_domain) || (payload && payload.client_domain) || "";
+  if (clientDomain.indexOf("vercel.app") !== -1 || clientDomain.indexOf("baysec.sfbu.edu") !== -1) {
+    return false;
+  }
+
+  // 3. Check Origin / Referer headers if present
+  var origin = (e && e.headers) ? (e.headers['Origin'] || e.headers['origin'] || e.headers['Referer'] || e.headers['referer'] || '') : '';
+  if (origin.indexOf('vercel.app') !== -1 || origin.indexOf('baysec.sfbu.edu') !== -1) {
+    return false;
+  }
+
+  // 4. Default fallback: Read Sim_Mode key from Admin_Config sheet
+  var sheetSimMode = getAdminConfigValue("Sim_Mode");
+  if (sheetSimMode !== null && sheetSimMode !== undefined) {
+    return String(sheetSimMode).toUpperCase() === "TRUE";
+  }
+
+  return false; // Default to production if not specified
+}
+
+// Backwards compatibility alias
+const resolveSimMode = resolveIsSimMode;
+
+/**
  * Returns active table names based on Sim_Mode setting.
- * Prioritizes client sim_mode parameter before Admin_Config fallback.
  */
 function getTableNames(e, payload) {
   let isSim;
@@ -250,7 +288,7 @@ function getTableNames(e, payload) {
   } else if (e && typeof e.isSim === "boolean") {
     return e;
   } else {
-    isSim = resolveSimMode(e, payload);
+    isSim = resolveIsSimMode(e, payload);
   }
 
   let attSheet = isSim ? "Attendance_Sim" : "Attendance";
@@ -298,6 +336,15 @@ function doPost(e) {
       return createJsonResponse(result);
     }
 
+    if (data.action === "clear_sim_attendance") {
+      const token = data.token || data.preview_key || data.officer_token || "";
+      if (!isOfficerTokenValid(token)) {
+        return createJsonResponse({ success: false, message: "ACCESS DENIED: Invalid Officer Token." });
+      }
+      clearSimulationAttendanceData();
+      return createJsonResponse({ success: true, message: "Attendance_Sim records cleared successfully." });
+    }
+
     if (data.action === "verify_officer_token") {
       const tokenToVerify = data.token || data.preview_key || data.officer_token || "";
       const isValid = isOfficerTokenValid(tokenToVerify);
@@ -331,6 +378,14 @@ function doGet(e) {
           isOfficer: isValid,
           message: isValid ? "Officer token verified successfully." : "ACCESS DENIED: Invalid Officer Token."
         });
+      }
+      if (e.parameter.action === "clear_sim_attendance") {
+        const token = e.parameter.token || e.parameter.preview_key || e.parameter.officer_token || "";
+        if (!isOfficerTokenValid(token)) {
+          return createJsonResponse({ success: false, message: "ACCESS DENIED: Invalid Officer Token." });
+        }
+        clearSimulationAttendanceData();
+        return createJsonResponse({ success: true, message: "Attendance_Sim records cleared successfully." });
       }
       if (e.parameter.action === "checkin") {
         return createJsonResponse(processCheckin(e.parameter, tables));
@@ -1230,6 +1285,33 @@ function setupSimulationTables() {
     simSubSheet.getRange("A1:H1").setValues([["Timestamp", "Week", "Handle", "Email", "Challenge_ID", "Solve_Tier", "Points_Awarded", "Flag_Hash"]]);
     simSubSheet.getRange("A1:H1").setFontWeight("bold").setBackground("#334155").setFontColor("#f59e0b");
   }
+}
+
+/**
+ * Clears staging attendance records in Attendance_Sim for testing.
+ */
+function clearSimulationAttendanceData() {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    if (!ss) return false;
+    let simAttSheet = ss.getSheetByName("Attendance_Sim");
+    if (simAttSheet) {
+      const lastRow = simAttSheet.getLastRow();
+      if (lastRow > 1) {
+        simAttSheet.deleteRows(2, lastRow - 1);
+      }
+    }
+    return true;
+  } catch (err) {
+    return false;
+  }
+}
+
+function clearSimulationAttendance() {
+  const success = clearSimulationAttendanceData();
+  try {
+    SpreadsheetApp.getUi().alert(success ? "Attendance_Sim records cleared successfully." : "Could not clear Attendance_Sim.");
+  } catch (e) {}
 }
 
 /**

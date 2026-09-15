@@ -1029,7 +1029,7 @@
             if (APPS_SCRIPT_URL && !APPS_SCRIPT_URL.includes("REPLACE_WITH_YOUR_DEPLOYED_SCRIPT_URL")) {
                 try {
                     if (syncStatus) syncStatus.innerText = "Syncing live with BaySec Engine...";
-                    const simParam = `&sim_mode=${SIM_MODE ? 'true' : 'false'}`;
+                    const simParam = `&sim_mode=${SIM_MODE ? 'true' : 'false'}&client_domain=${encodeURIComponent(window.location.hostname)}`;
                     const resp = await fetch(`${APPS_SCRIPT_URL}?action=get_leaderboard${simParam}${previewKey ? `&preview_key=${encodeURIComponent(previewKey)}` : ''}`);
                     if (resp.ok) {
                         const data = await resp.json();
@@ -1245,7 +1245,7 @@
             msg.innerText = "Connecting to security gateway...";
 
             try {
-                const resp = await fetch(`${APPS_SCRIPT_URL}?action=request_alias_otp&sim_mode=${SIM_MODE ? 'true' : 'false'}&email=${encodeURIComponent(email)}`);
+                const resp = await fetch(`${APPS_SCRIPT_URL}?action=request_alias_otp&sim_mode=${SIM_MODE ? 'true' : 'false'}&client_domain=${encodeURIComponent(window.location.hostname)}&email=${encodeURIComponent(email)}`);
                 const res = await resp.json();
 
                 if (res.success) {
@@ -1298,6 +1298,7 @@
                 const queryParams = new URLSearchParams({
                     action: "update_alias",
                     sim_mode: SIM_MODE ? "true" : "false",
+                    client_domain: window.location.hostname,
                     email: aliasTargetEmail,
                     otp: otp,
                     new_alias: newAlias
@@ -1361,7 +1362,7 @@
 
             try {
                 // NEVER save to storage before server verification
-                const resp = await fetch(`${APPS_SCRIPT_URL}?action=verify_officer_token&sim_mode=${SIM_MODE ? 'true' : 'false'}&token=${encodeURIComponent(key)}`);
+                const resp = await fetch(`${APPS_SCRIPT_URL}?action=verify_officer_token&sim_mode=${SIM_MODE ? 'true' : 'false'}&client_domain=${encodeURIComponent(window.location.hostname)}&token=${encodeURIComponent(key)}`);
                 const result = await resp.json();
 
                 if (result && result.valid === true) {

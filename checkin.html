@@ -541,7 +541,7 @@
             }
 
             try {
-                const simParam = `&sim_mode=${SIM_MODE ? 'true' : 'false'}`;
+                const simParam = `&sim_mode=${SIM_MODE ? 'true' : 'false'}&client_domain=${encodeURIComponent(window.location.hostname)}`;
                 const response = await fetch(`${APPS_SCRIPT_URL}?action=get_active_session${simParam}${previewKey ? `&preview_key=${encodeURIComponent(previewKey)}` : ''}`);
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status} from authentication server`);
@@ -654,10 +654,11 @@
             statusBox.style.display = "none";
 
             try {
-                // Send GET request with dynamically resolved activeWeek and sim_mode
+                // Send GET request with dynamically resolved activeWeek, sim_mode, and client_domain
                 const queryParams = new URLSearchParams({
                     action: "checkin",
                     sim_mode: SIM_MODE ? "true" : "false",
+                    client_domain: window.location.hostname,
                     week: activeSession.activeWeek,
                     handle: handle,
                     email: email,

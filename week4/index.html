@@ -408,7 +408,7 @@
             }
 
             try {
-                const simParam = `&sim_mode=${SIM_MODE ? 'true' : 'false'}`;
+                const simParam = `&sim_mode=${SIM_MODE ? 'true' : 'false'}&client_domain=${encodeURIComponent(window.location.hostname)}`;
                 const resp = await fetch(`${APPS_SCRIPT_URL}?action=status${simParam}${previewKey ? `&preview_key=${encodeURIComponent(previewKey)}` : ''}`);
                 if (resp.ok) {
                     const data = await resp.json();
@@ -485,6 +485,7 @@
                 const queryParams = new URLSearchParams({
                     action: "submit_flag",
                     sim_mode: SIM_MODE ? "true" : "false",
+                    client_domain: window.location.hostname,
                     challenge_id: "challenge_0x01",
                     email: email,
                     flag: input,
