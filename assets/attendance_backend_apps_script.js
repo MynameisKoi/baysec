@@ -105,7 +105,7 @@ function hashSecret(secret, salt) {
 }
 
 // Rate Limiting Configuration (CacheService)
-const RATE_LIMIT_WINDOW = 300; // 5-minute sliding window (seconds)
+const RATE_LIMIT_WINDOW = 60; // 1-minute sliding window (seconds)
 const MAX_RATE_LIMIT_ATTEMPTS = 5; // Maximum attempts allowed before blocking
 
 /**
@@ -606,12 +606,12 @@ function processFlagSubmission(data, tablesOrE) {
     return { success: false, message: "Invalid email format. Please provide your SFBU student email." };
   }
 
-  // Rate Limiting Protection: Max 5 attempts per 5-minute sliding window
+  // Rate Limiting Protection: Max 5 attempts per 1-minute sliding window
   if (isRateLimited("submit", email)) {
     return {
       success: false,
-      error: "RATE_LIMITED: Too many attempts. Please wait 5 minutes before trying again.",
-      message: "RATE_LIMITED: Too many attempts. Please wait 5 minutes before trying again."
+      error: "RATE_LIMITED: Too many attempts. Please wait 1 minute before trying again.",
+      message: "RATE_LIMITED: Too many attempts. Please wait 1 minute before trying again."
     };
   }
 
@@ -895,12 +895,12 @@ function requestAliasOtp(data) {
     return { success: false, message: "Please provide a valid SFBU student email." };
   }
 
-  // Rate Limiting Protection: Max 5 attempts per 5-minute sliding window
+  // Rate Limiting Protection: Max 5 attempts per 1-minute sliding window
   if (isRateLimited("otp", email)) {
     return {
       success: false,
-      error: "RATE_LIMITED: Too many attempts. Please wait 5 minutes before trying again.",
-      message: "RATE_LIMITED: Too many attempts. Please wait 5 minutes before trying again."
+      error: "RATE_LIMITED: Too many attempts. Please wait 1 minute before trying again.",
+      message: "RATE_LIMITED: Too many attempts. Please wait 1 minute before trying again."
     };
   }
   recordRateLimitAttempt("otp", email);
