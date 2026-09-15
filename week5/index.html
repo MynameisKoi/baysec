@@ -9,6 +9,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600;700&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <script src="../assets/config.js"></script>
     <style>
         :root {
             --bg: #0b0f19;
@@ -1255,7 +1256,7 @@
             }
         }
 
-        const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzQO2sZyXWsUtTgpHzbGy5MLTyV-0-kQlnqddTG3SjwDcOMKsjrA7p5kwBjc_tJ7do_Cg/exec";
+        var APPS_SCRIPT_URL = window.APPS_SCRIPT_URL || "https://script.google.com/macros/s/AKfycbzQO2sZyXWsUtTgpHzbGy5MLTyV-0-kQlnqddTG3SjwDcOMKsjrA7p5kwBjc_tJ7do_Cg/exec";
 
         // Restore saved email if available
         const savedEmail = localStorage.getItem("baysec_email");
@@ -1280,13 +1281,14 @@
             const simBanner = document.getElementById("simBanner");
 
             try {
-                const resp = await fetch(`${APPS_SCRIPT_URL}?action=get_active_session${previewKey ? `&preview_key=${encodeURIComponent(previewKey)}` : ''}`);
+                const simParam = `&sim_mode=${SIM_MODE ? 'true' : 'false'}`;
+                const resp = await fetch(`${APPS_SCRIPT_URL}?action=get_active_session${simParam}${previewKey ? `&preview_key=${encodeURIComponent(previewKey)}` : ''}`);
                 if (resp.ok) {
                     const data = await resp.json();
                     
-                    // Sim Mode Banner
-                    if (data.simMode && simBanner) {
-                        simBanner.style.display = "flex";
+                    // Sim Mode Banner strictly based on client SIM_MODE
+                    if (simBanner) {
+                        simBanner.style.display = SIM_MODE ? "flex" : "none";
                     }
 
                     // Officer Preview State
@@ -1367,7 +1369,7 @@
 
             try {
                 // NEVER save to storage before server verification
-                const resp = await fetch(`${APPS_SCRIPT_URL}?action=verify_officer_token&token=${encodeURIComponent(token)}`);
+                const resp = await fetch(`${APPS_SCRIPT_URL}?action=verify_officer_token&sim_mode=${SIM_MODE ? 'true' : 'false'}&token=${encodeURIComponent(token)}`);
                 const result = await resp.json();
 
                 if (result && result.valid === true) {
@@ -1461,6 +1463,7 @@
             try {
                 const queryParams = new URLSearchParams({
                     action: "submit_flag",
+                    sim_mode: SIM_MODE ? "true" : "false",
                     challenge_id: "challenge_0x02",
                     week: 5,
                     email: email,

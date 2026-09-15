@@ -11,6 +11,7 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600;700&family=Outfit:wght@300;400;600;700;800&display=swap"
         rel="stylesheet">
+    <script src="assets/config.js"></script>
     <style>
         :root {
             --bg: #0b0f19;
@@ -494,7 +495,7 @@
         // CONFIGURATION
         // =========================================================================
         // Google Apps Script Web App URL
-        const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzQO2sZyXWsUtTgpHzbGy5MLTyV-0-kQlnqddTG3SjwDcOMKsjrA7p5kwBjc_tJ7do_Cg/exec";
+        var APPS_SCRIPT_URL = window.APPS_SCRIPT_URL || "https://script.google.com/macros/s/AKfycbzQO2sZyXWsUtTgpHzbGy5MLTyV-0-kQlnqddTG3SjwDcOMKsjrA7p5kwBjc_tJ7do_Cg/exec";
 
         // State tracking
         const activeSession = {
@@ -534,7 +535,8 @@
             }
 
             try {
-                const response = await fetch(`${APPS_SCRIPT_URL}?action=get_active_session${previewKey ? `&preview_key=${encodeURIComponent(previewKey)}` : ''}`);
+                const simParam = `&sim_mode=${SIM_MODE ? 'true' : 'false'}`;
+                const response = await fetch(`${APPS_SCRIPT_URL}?action=get_active_session${simParam}${previewKey ? `&preview_key=${encodeURIComponent(previewKey)}` : ''}`);
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status} from authentication server`);
                 }
@@ -542,12 +544,10 @@
                 const data = await response.json();
                 const isOpen = (data.isOpen === true || data.checkinOpen === true);
 
-                // Toggle Staging / Simulation Banner
+                // Toggle Staging / Simulation Banner strictly based on client SIM_MODE
                 const simBanner = document.getElementById('simBanner');
-                if (data.simMode && simBanner) {
-                    simBanner.style.display = "flex";
-                } else if (simBanner) {
-                    simBanner.style.display = "none";
+                if (simBanner) {
+                    simBanner.style.display = SIM_MODE ? "flex" : "none";
                 }
 
                 // Toggle Officer Banner
@@ -648,9 +648,10 @@
             statusBox.style.display = "none";
 
             try {
-                // Send GET request with dynamically resolved activeWeek
+                // Send GET request with dynamically resolved activeWeek and sim_mode
                 const queryParams = new URLSearchParams({
                     action: "checkin",
+                    sim_mode: SIM_MODE ? "true" : "false",
                     week: activeSession.activeWeek,
                     handle: handle,
                     email: email,

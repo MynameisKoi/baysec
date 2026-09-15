@@ -11,6 +11,7 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600;700&family=Outfit:wght@300;400;600;700;800&display=swap"
         rel="stylesheet">
+    <script src="../assets/config.js"></script>
     <style>
         * {
             box-sizing: border-box;
@@ -384,7 +385,7 @@
     </div>
 
     <script>
-        const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzQO2sZyXWsUtTgpHzbGy5MLTyV-0-kQlnqddTG3SjwDcOMKsjrA7p5kwBjc_tJ7do_Cg/exec";
+        var APPS_SCRIPT_URL = window.APPS_SCRIPT_URL || "https://script.google.com/macros/s/AKfycbzQO2sZyXWsUtTgpHzbGy5MLTyV-0-kQlnqddTG3SjwDcOMKsjrA7p5kwBjc_tJ7do_Cg/exec";
 
         // Pre-fill saved email and check environment & officer preview status
         document.addEventListener("DOMContentLoaded", async () => {
@@ -401,12 +402,13 @@
             }
 
             try {
-                const resp = await fetch(`${APPS_SCRIPT_URL}?action=status${previewKey ? `&preview_key=${encodeURIComponent(previewKey)}` : ''}`);
+                const simParam = `&sim_mode=${SIM_MODE ? 'true' : 'false'}`;
+                const resp = await fetch(`${APPS_SCRIPT_URL}?action=status${simParam}${previewKey ? `&preview_key=${encodeURIComponent(previewKey)}` : ''}`);
                 if (resp.ok) {
                     const data = await resp.json();
                     const simBanner = document.getElementById("simBanner");
-                    if (data.simMode && simBanner) {
-                        simBanner.style.display = "flex";
+                    if (simBanner) {
+                        simBanner.style.display = SIM_MODE ? "flex" : "none";
                     }
                     const officerBanner = document.getElementById("officerBanner");
                     if (data.isOfficer && officerBanner) {
@@ -476,6 +478,7 @@
             try {
                 const queryParams = new URLSearchParams({
                     action: "submit_flag",
+                    sim_mode: SIM_MODE ? "true" : "false",
                     challenge_id: "challenge_0x01",
                     email: email,
                     flag: input,

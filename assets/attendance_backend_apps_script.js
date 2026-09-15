@@ -175,10 +175,39 @@ function isSimModeActive() {
 }
 
 /**
- * Returns active table names based on Sim_Mode setting.
+ * Resolves simulation mode:
+ * 1. Checks client query parameters (e.parameter.sim_mode) and body payload (payload.sim_mode).
+ * 2. If client supplied a parameter:
+ *    const isSim = (e.parameter && e.parameter.sim_mode === "true") || (payload && payload.sim_mode === true);
+ * 3. Fallback to Admin_Config sheet's Sim_Mode cell ONLY if the client did not supply a parameter.
  */
-function getTableNames() {
-  const isSim = isSimModeActive();
+function resolveSimMode(e, payload) {
+  const paramSim = (e && e.parameter && e.parameter.sim_mode !== undefined) ? e.parameter.sim_mode : (e && e.sim_mode !== undefined ? e.sim_mode : undefined);
+  const payloadSim = (payload && payload.sim_mode !== undefined) ? payload.sim_mode : undefined;
+
+  if (paramSim !== undefined || payloadSim !== undefined) {
+    const isParamTrue = (paramSim === "true" || paramSim === true || paramSim === 1 || paramSim === "1");
+    const isPayloadTrue = (payloadSim === true || payloadSim === "true" || payloadSim === 1 || payloadSim === "1");
+    return Boolean(isParamTrue || isPayloadTrue);
+  }
+
+  return isSimModeActive();
+}
+
+/**
+ * Returns active table names based on Sim_Mode setting.
+ * Prioritizes client sim_mode parameter before Admin_Config fallback.
+ */
+function getTableNames(e, payload) {
+  let isSim;
+  if (typeof e === "boolean") {
+    isSim = e;
+  } else if (e && typeof e.isSim === "boolean") {
+    return e;
+  } else {
+    isSim = resolveSimMode(e, payload);
+  }
+
   let attSheet = isSim ? "Attendance_Sim" : "Attendance";
   try {
     const ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -187,7 +216,7 @@ function getTableNames() {
         attSheet = "Attendance_Log";
       }
     }
-  } catch (e) {}
+  } catch (err) {}
 
   return {
     isSim: isSim,
@@ -202,14 +231,15 @@ function doPost(e) {
   try {
     const rawData = e.postData.contents;
     const data = JSON.parse(rawData);
+    const tables = getTableNames(e, data);
     
     if (data.action === "checkin") {
-      const result = processCheckin(data);
+      const result = processCheckin(data, tables);
       return createJsonResponse(result);
     }
 
     if (data.action === "submit_flag" || data.action === "submit_challenge") {
-      const result = processFlagSubmission(data);
+      const result = processFlagSubmission(data, tables);
       return createJsonResponse(result);
     }
 
@@ -219,7 +249,7 @@ function doPost(e) {
     }
 
     if (data.action === "update_alias") {
-      const result = updateHackerAlias(data);
+      const result = updateHackerAlias(data, tables);
       return createJsonResponse(result);
     }
 
@@ -242,7 +272,7 @@ function doPost(e) {
 // Handle GET requests (100% CORS-friendly for all web clients)
 function doGet(e) {
   try {
-    const tables = getTableNames();
+    const tables = getTableNames(e);
     const isSim = tables.isSim;
     const previewKey = e && e.parameter ? (e.parameter.preview_key || e.parameter.officer_token || "") : "";
     const isOfficer = isOfficerTokenValid(previewKey);
@@ -258,16 +288,16 @@ function doGet(e) {
         });
       }
       if (e.parameter.action === "checkin") {
-        return createJsonResponse(processCheckin(e.parameter));
+        return createJsonResponse(processCheckin(e.parameter, tables));
       }
       if (e.parameter.action === "submit_flag" || e.parameter.action === "submit_challenge") {
-        return createJsonResponse(processFlagSubmission(e.parameter));
+        return createJsonResponse(processFlagSubmission(e.parameter, tables));
       }
       if (e.parameter.action === "request_alias_otp") {
         return createJsonResponse(requestAliasOtp(e.parameter));
       }
       if (e.parameter.action === "update_alias") {
-        return createJsonResponse(updateHackerAlias(e.parameter));
+        return createJsonResponse(updateHackerAlias(e.parameter, tables));
       }
       if (e.parameter.action === "get_leaderboard") {
         return createJsonResponse({
@@ -275,7 +305,7 @@ function doGet(e) {
           simMode: isSim,
           table: tables.leaderboard,
           isOfficer: isOfficer,
-          leaderboard: getLeaderboardData()
+          leaderboard: getLeaderboardData(tables)
         });
       }
       if (e.parameter.action === "get_active_session" || e.parameter.action === "status") {
@@ -319,9 +349,9 @@ function doGet(e) {
  * Returns formatted leaderboard array for client API consumption.
  * Includes firstBlood boolean badge tag and aliasSet status.
  */
-function getLeaderboardData() {
+function getLeaderboardData(tablesOrE) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const tables = getTableNames();
+  const tables = (tablesOrE && tablesOrE.leaderboard) ? tablesOrE : getTableNames(tablesOrE);
   const lbSheet = ss.getSheetByName(tables.leaderboard) || ss.getSheetByName("Sheet1");
   if (!lbSheet) return [];
 
@@ -383,10 +413,10 @@ function getLeaderboardData() {
  * Validates against salted hash or plaintext passcode.
  * Dynamically resolves active session and handles sandbox routing + alias fallback.
  */
-function processCheckin(data) {
+function processCheckin(data, tablesOrE) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const session = getActiveSessionConfig();
-  const tables = getTableNames();
+  const tables = (tablesOrE && tablesOrE.leaderboard) ? tablesOrE : getTableNames(tablesOrE, data);
   
   // 1. GATE 1: Is check-in currently open for any session?
   if (!session.isOpen || !session.activeWeek) {
@@ -514,9 +544,9 @@ function processCheckin(data) {
  * Evaluates submitted token against salted SHA-256 hashes.
  * Strictly enforces unique constraint on (user_email, challenge_id).
  */
-function processFlagSubmission(data) {
+function processFlagSubmission(data, tablesOrE) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const tables = getTableNames();
+  const tables = (tablesOrE && tablesOrE.leaderboard) ? tablesOrE : getTableNames(tablesOrE, data);
   const email = String(data.email || "").trim().toLowerCase();
   const submittedToken = String(data.flag || data.token || "").trim();
   const explicitChallengeId = String(data.challenge_id || data.challengeId || "").trim();
@@ -865,7 +895,7 @@ function requestAliasOtp(data) {
  * Verifies OTP and updates the student's hacker alias in the Leaderboard.
  * Validates uniqueness and format. Preserves all previously earned points.
  */
-function updateHackerAlias(data) {
+function updateHackerAlias(data, tablesOrE) {
   const email = String(data.email || "").trim().toLowerCase();
   const otp = String(data.otp || "").trim();
   const newAlias = String(data.new_alias || data.alias || data.handle || "").trim();
@@ -896,7 +926,7 @@ function updateHackerAlias(data) {
 
   // 3. Check Alias Uniqueness across Leaderboard (and Leaderboard_Sim)
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const tables = getTableNames();
+  const tables = (tablesOrE && tablesOrE.leaderboard) ? tablesOrE : getTableNames(tablesOrE, data);
   const targetSheets = [tables.leaderboard];
   if (!tables.isSim && ss.getSheetByName("Leaderboard_Sim")) {
     targetSheets.push("Leaderboard_Sim");

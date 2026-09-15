@@ -11,6 +11,7 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600;700&family=Outfit:wght@300;400;600;700;800&display=swap"
         rel="stylesheet">
+    <script src="assets/config.js"></script>
     <style>
         :root {
             --bg: #0b0f19;
@@ -955,7 +956,7 @@
          * LEAGUE SCORING & GOOGLE SHEET INTEGRATION
          * -------------------------------------------------------------------
          */
-        const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzQO2sZyXWsUtTgpHzbGy5MLTyV-0-kQlnqddTG3SjwDcOMKsjrA7p5kwBjc_tJ7do_Cg/exec";
+        var APPS_SCRIPT_URL = window.APPS_SCRIPT_URL || "https://script.google.com/macros/s/AKfycbzQO2sZyXWsUtTgpHzbGy5MLTyV-0-kQlnqddTG3SjwDcOMKsjrA7p5kwBjc_tJ7do_Cg/exec";
         const GOOGLE_SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vT_eco82kiGO8TiAT-pMYYNZ_YPYpyIna3N1tp1-krYCUFaOWZ2aKkfGQYrP8uG8QE9t239JXOT_QsJ/pub?gid=403173859&single=true&output=csv";
 
         // Initial Production Standings Seed: Verified solvers of the initial teaser/welcome cipher ("BaySec is here")
@@ -1022,17 +1023,19 @@
             if (APPS_SCRIPT_URL && !APPS_SCRIPT_URL.includes("REPLACE_WITH_YOUR_DEPLOYED_SCRIPT_URL")) {
                 try {
                     if (syncStatus) syncStatus.innerText = "Syncing live with BaySec Engine...";
-                    const resp = await fetch(`${APPS_SCRIPT_URL}?action=get_leaderboard${previewKey ? `&preview_key=${encodeURIComponent(previewKey)}` : ''}`);
+                    const simParam = `&sim_mode=${SIM_MODE ? 'true' : 'false'}`;
+                    const resp = await fetch(`${APPS_SCRIPT_URL}?action=get_leaderboard${simParam}${previewKey ? `&preview_key=${encodeURIComponent(previewKey)}` : ''}`);
                     if (resp.ok) {
                         const data = await resp.json();
 
-                        // Toggle Staging / Simulation Banner
-                        if (data.simMode) {
-                            if (simBanner) simBanner.style.display = "flex";
-                            if (syncStatus) syncStatus.innerText = "⚠️ [STAGING / SIMULATION MODE ACTIVE]";
-                        } else {
-                            if (simBanner) simBanner.style.display = "none";
-                            if (syncStatus) syncStatus.innerText = "Live Synced with Google Sheets";
+                        // Toggle Staging / Simulation Banner strictly based on client SIM_MODE
+                        if (simBanner) {
+                            simBanner.style.display = SIM_MODE ? "flex" : "none";
+                        }
+                        if (SIM_MODE && syncStatus) {
+                            syncStatus.innerText = "⚠️ [STAGING / SIMULATION MODE ACTIVE]";
+                        } else if (syncStatus) {
+                            syncStatus.innerText = "Live Synced with Google Sheets";
                         }
 
                         // Toggle Officer Banner & Footer State
@@ -1236,7 +1239,7 @@
             msg.innerText = "Connecting to security gateway...";
 
             try {
-                const resp = await fetch(`${APPS_SCRIPT_URL}?action=request_alias_otp&email=${encodeURIComponent(email)}`);
+                const resp = await fetch(`${APPS_SCRIPT_URL}?action=request_alias_otp&sim_mode=${SIM_MODE ? 'true' : 'false'}&email=${encodeURIComponent(email)}`);
                 const res = await resp.json();
 
                 if (res.success) {
@@ -1288,6 +1291,7 @@
             try {
                 const queryParams = new URLSearchParams({
                     action: "update_alias",
+                    sim_mode: SIM_MODE ? "true" : "false",
                     email: aliasTargetEmail,
                     otp: otp,
                     new_alias: newAlias
@@ -1351,7 +1355,7 @@
 
             try {
                 // NEVER save to storage before server verification
-                const resp = await fetch(`${APPS_SCRIPT_URL}?action=verify_officer_token&token=${encodeURIComponent(key)}`);
+                const resp = await fetch(`${APPS_SCRIPT_URL}?action=verify_officer_token&sim_mode=${SIM_MODE ? 'true' : 'false'}&token=${encodeURIComponent(key)}`);
                 const result = await resp.json();
 
                 if (result && result.valid === true) {
