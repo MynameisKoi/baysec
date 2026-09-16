@@ -8,7 +8,9 @@
     <link rel="icon" type="image/png" href="../assets/baysec-blue.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600;700&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600;700&family=Outfit:wght@400;600;700;800&display=swap"
+        rel="stylesheet">
     <script src="../assets/config.js"></script>
     <style>
         :root {
@@ -43,7 +45,7 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            background-image: 
+            background-image:
                 radial-gradient(circle at 10% 10%, rgba(0, 240, 255, 0.05) 0%, transparent 40%),
                 radial-gradient(circle at 90% 90%, rgba(239, 68, 68, 0.05) 0%, transparent 40%);
         }
@@ -219,7 +221,8 @@
             transition: all 0.15s ease;
         }
 
-        .preset-btn:hover, .preset-btn.active {
+        .preset-btn:hover,
+        .preset-btn.active {
             color: #fff;
             border-color: var(--cyan);
             background: rgba(0, 240, 255, 0.15);
@@ -265,18 +268,22 @@
             background: rgba(74, 222, 128, 0.12);
             color: #86efac;
         }
+
         tr.proto-dns {
             background: rgba(56, 189, 248, 0.1);
             color: #7dd3fc;
         }
+
         tr.proto-tcp {
             background: rgba(148, 163, 184, 0.05);
             color: #cbd5e1;
         }
+
         tr.proto-arp {
             background: rgba(245, 158, 11, 0.1);
             color: #fde047;
         }
+
         tr.proto-tls {
             background: rgba(192, 132, 252, 0.1);
             color: #d8b4fe;
@@ -691,6 +698,7 @@
             display: block;
             transition: all 0.2s;
         }
+
         .btn-lock-primary:hover {
             transform: translateY(-2px);
             box-shadow: 0 0 15px rgba(56, 189, 248, 0.4);
@@ -707,6 +715,7 @@
             display: block;
             transition: all 0.2s;
         }
+
         .btn-lock-secondary:hover {
             border-color: #94a3b8;
             color: #f8fafc;
@@ -724,6 +733,7 @@
             transition: all 0.2s;
             font-family: inherit;
         }
+
         .btn-lock-officer:hover {
             background: rgba(168, 85, 247, 0.15);
             border-style: solid;
@@ -734,10 +744,12 @@
                 grid-template-columns: 1fr;
                 height: 400px;
             }
+
             .dissection-pane {
                 border-right: none;
                 border-bottom: 1px solid #1e293b;
             }
+
             .submit-form {
                 flex-direction: column;
             }
@@ -754,7 +766,8 @@
             <div class="lock-badge">CLASSIFIED / SCHEDULED FOR WEEK 5</div>
             <h2 style="font-size: 1.5rem; margin-bottom: 10px; color: #f8fafc;">Challenge 0x02 is Locked</h2>
             <p style="color: #94a3b8; font-size: 0.9rem; line-height: 1.5;">
-                This challenge is scheduled to unlock during the <strong>Week 5 Meeting Session</strong>. Regular access is currently gated.
+                This challenge is scheduled to unlock during the <strong>Week 5 Meeting Session</strong>. Regular access
+                is currently gated.
             </p>
             <div class="lock-info-box">
                 <div>📅 <strong>Session Release:</strong> Week 5 (Sep 14, 2026)</div>
@@ -763,7 +776,8 @@
             <div class="lock-actions">
                 <a href="../week4/" class="btn-lock-primary">Go to Challenge 0x01 (Week 4) ➔</a>
                 <a href="../leaderboard.html" class="btn-lock-secondary">View League Standings</a>
-                <button type="button" onclick="openOfficerModal()" class="btn-lock-officer">🛠️ Officer Preview Login</button>
+                <button type="button" onclick="openOfficerModal()" class="btn-lock-officer">🛠️ Officer Preview
+                    Login</button>
             </div>
         </div>
     </div>
@@ -774,17 +788,21 @@
             <div class="modal-header">
                 <div>
                     <h3 style="margin: 0; color: #c084fc; font-size: 1.25rem;">🛠️ Officer Preview Login</h3>
-                    <p style="margin: 4px 0 0; color: #94a3b8; font-size: 0.82rem;">Unlock upcoming challenges and bypass session gating.</p>
+                    <p style="margin: 4px 0 0; color: #94a3b8; font-size: 0.82rem;">Unlock upcoming challenges and
+                        bypass session gating.</p>
                 </div>
                 <button type="button" onclick="closeOfficerModal()" class="modal-close-btn">&times;</button>
             </div>
             <div style="margin-bottom: 16px;">
-                <label style="display: block; color: #cbd5e1; font-size: 0.85rem; margin-bottom: 6px;">Officer Secret Token</label>
-                <input type="password" id="officerTokenInput" class="modal-input" placeholder="Enter officer authorization token" autocomplete="off" />
+                <label style="display: block; color: #cbd5e1; font-size: 0.85rem; margin-bottom: 6px;">Officer Secret
+                    Token</label>
+                <input type="password" id="officerTokenInput" class="modal-input"
+                    placeholder="Enter officer authorization token" autocomplete="off" />
             </div>
             <div style="display: flex; gap: 10px;">
                 <button type="button" onclick="closeOfficerModal()" class="modal-btn-secondary">Cancel</button>
-                <button type="button" onclick="saveOfficerToken()" class="modal-btn-primary" style="background: linear-gradient(135deg, #a855f7, #6366f1); flex: 1;">ENABLE PREVIEW MODE</button>
+                <button type="button" onclick="saveOfficerToken()" class="modal-btn-primary"
+                    style="background: linear-gradient(135deg, #a855f7, #6366f1); flex: 1;">ENABLE PREVIEW MODE</button>
             </div>
             <div id="officerModalMsg" style="margin-top: 12px; font-size: 0.85rem;"></div>
         </div>
@@ -793,7 +811,8 @@
     <!-- Top Navigation Bar -->
     <header class="gateway-header">
         <div class="brand-section">
-            <img id="brandLogo" src="../assets/baysec-blue.png" alt="BaySec Crest" class="brand-logo" onclick="toggleLogoTheme()" title="Click to toggle crest" />
+            <img id="brandLogo" src="../assets/baysec-blue.png" alt="BaySec Crest" class="brand-logo"
+                onclick="toggleLogoTheme()" title="Click to toggle crest" />
             <div>
                 <div class="brand-title">BaySec Security Gateway</div>
                 <span class="badge-tag">CHALLENGE 0x02 • PACKET ANALYSIS</span>
@@ -801,7 +820,8 @@
         </div>
 
         <div class="nav-links">
-            <a href="traffic_analysis_0x02.pcap" download class="nav-btn primary" title="Download raw packet capture for Wireshark">
+            <a href="traffic_analysis_0x02.pcap" download class="nav-btn primary"
+                title="Download raw packet capture for Wireshark">
                 ⬇ Download .PCAP
             </a>
             <a href="presentation.html" class="nav-btn">
@@ -816,7 +836,8 @@
     <!-- Staging / Simulation Warning Banner -->
     <div id="simBanner" class="sim-banner" style="display: none;">
         <span>⚠️</span>
-        <span><strong>[STAGING / SIMULATION MODE ACTIVE]</strong> — Sandbox mode is enabled. Submissions and points are isolated to staging tables.</span>
+        <span><strong>[STAGING / SIMULATION MODE ACTIVE]</strong> — Sandbox mode is enabled. Submissions and points are
+            isolated to staging tables.</span>
     </div>
 
     <!-- Officer Preview Floating Indicator -->
@@ -825,7 +846,8 @@
             <span>🛠️</span>
             <span><strong>[OFFICER PREVIEW MODE: ALL CHALLENGES UNLOCKED]</strong></span>
         </div>
-        <button type="button" onclick="exitOfficerPreview()" class="btn-exit-officer">Exit Officer Mode / View as Member</button>
+        <button type="button" onclick="exitOfficerPreview()" class="btn-exit-officer">Exit Officer Mode / View as
+            Member</button>
     </div>
 
     <!-- Main Challenge Container: Default-to-Deny (hidden on initial paint to eliminate 1-2s flash) -->
@@ -835,18 +857,22 @@
         <section class="briefing-card">
             <h1>Challenge 0x02: The Intercepted Uplink</h1>
             <p>
-                An unencrypted telemetry uplink was captured on our internal laboratory subnet. An operator transmitted an authentication beacon to register their field station. 
-                Use the in-browser <strong>CyberShark Packet Analyzer</strong> below (or download the <code>.pcap</code> to inspect in desktop Wireshark) to filter protocol traffic, inspect the payload, and retrieve the flag token.
+                An unencrypted telemetry uplink was captured on our internal laboratory subnet. An operator transmitted
+                an authentication beacon to register their field station.
+                Use the in-browser <strong>CyberShark Packet Analyzer</strong> below (or download the <code>.pcap</code>
+                to inspect in desktop Wireshark) to filter protocol traffic, inspect the payload, and retrieve the flag
+                token.
             </p>
         </section>
 
         <!-- CyberShark Packet Analyzer Terminal -->
         <section class="analyzer-container">
-            
+
             <!-- Filter Toolbar -->
             <div class="filter-toolbar">
                 <span class="filter-label">Filter:</span>
-                <input type="text" id="filterInput" class="filter-input" placeholder="Apply display filter (e.g. http, tcp, dns, port 8080)" oninput="applyFilter()" />
+                <input type="text" id="filterInput" class="filter-input"
+                    placeholder="Apply display filter (e.g. http, tcp, dns, port 8080)" oninput="applyFilter()" />
                 <button class="preset-btn active" onclick="setPreset('')">Clear</button>
                 <button class="preset-btn" onclick="setPreset('http')">http</button>
                 <button class="preset-btn" onclick="setPreset('dns')">dns</button>
@@ -876,7 +902,7 @@
 
             <!-- Packet Dissection & Hex Dump Split View -->
             <div class="inspector-split">
-                
+
                 <!-- Left: Protocol Tree Dissection -->
                 <div class="dissection-pane" id="dissectionPane">
                     <div style="color: var(--text-muted); font-style: italic; padding: 20px;">
@@ -902,9 +928,12 @@
                 Format: <code>sfbu{...}</code> • Recovered from the intercepted HTTP transmission.
             </p>
 
-            <form class="submit-form" onsubmit="event.preventDefault(); verifyFlag();" style="display: flex; gap: 10px; flex-wrap: wrap;">
-                <input type="email" id="emailInput" class="input-token" placeholder="SFBU Student Email" style="max-width: 320px; flex: 1;" autocomplete="email" required />
-                <input type="text" id="flagInput" class="input-token" placeholder="Enter Flag sfbu{...} or Secret Token" autocomplete="off" style="flex: 2; min-width: 260px;" required />
+            <form class="submit-form" onsubmit="event.preventDefault(); verifyFlag();"
+                style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <input type="email" id="emailInput" class="input-token" placeholder="SFBU Student Email"
+                    style="max-width: 320px; flex: 1;" autocomplete="email" required />
+                <input type="text" id="flagInput" class="input-token" placeholder="Enter Flag sfbu{...} or Secret Token"
+                    autocomplete="off" style="flex: 2; min-width: 260px;" required />
                 <button type="submit" class="btn-submit" id="submitBtn">SUBMIT & CLAIM POINTS</button>
             </form>
 
@@ -915,7 +944,7 @@
 
     <!-- Synchronous Gate Check: Strict Hash Validation & Default-to-Deny -->
     <script>
-        (function() {
+        (function () {
             function syncSha256(ascii) {
                 function rightRotate(v, a) { return (v >>> a) | (v << (32 - a)); }
                 var mathPow = Math.pow, maxWord = mathPow(2, 32), i, j, result = '', words = [];
@@ -977,7 +1006,7 @@
                     sessionStorage.removeItem('baysec_officer_token');
                     sessionStorage.removeItem('baysec_officer_key');
                 }
-            } catch(e) {}
+            } catch (e) { }
             // Keep container hidden
             const mainEl = document.getElementById('challengeMain');
             if (mainEl) mainEl.style.display = 'none';
@@ -1060,12 +1089,14 @@
                 info: "GET /healthcheck HTTP/1.1",
                 details: [
                     { title: "Frame 8: 172 bytes on wire", items: ["Protocols in frame: eth:ip:tcp:http"] },
-                    { title: "Hypertext Transfer Protocol", items: [
-                        "GET /healthcheck HTTP/1.1",
-                        "Host: gateway.baysec.sfbu",
-                        "User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:128.0)",
-                        "Accept: */*"
-                    ]}
+                    {
+                        title: "Hypertext Transfer Protocol", items: [
+                            "GET /healthcheck HTTP/1.1",
+                            "Host: gateway.baysec.sfbu",
+                            "User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:128.0)",
+                            "Accept: */*"
+                        ]
+                    }
                 ],
                 hex: "0000  47 45 54 20 2f 68 65 61 6c 74 68 63 68 65 63 6b   GET /healthcheck\n0010  20 48 54 54 50 2f 31 2e 31 0d 0a 48 6f 73 74 3a    HTTP/1.1..Host:\n0020  20 67 61 74 65 77 61 79 2e 62 61 79 73 65 63 2e    gateway.baysec.\n0030  73 66 62 75 0d 0a 55 73 65 72 2d 41 67 65 6e 74   sfbu..User-Agent"
             },
@@ -1074,13 +1105,15 @@
                 info: "HTTP/1.1 200 OK (text/plain)",
                 details: [
                     { title: "Frame 9: 148 bytes on wire", items: ["Protocols in frame: eth:ip:tcp:http"] },
-                    { title: "Hypertext Transfer Protocol", items: [
-                        "HTTP/1.1 200 OK",
-                        "Server: nginx/1.24.0 (Ubuntu)",
-                        "Content-Type: text/plain",
-                        "Content-Length: 18",
-                        "Data: SYSTEM ONLINE: OK"
-                    ]}
+                    {
+                        title: "Hypertext Transfer Protocol", items: [
+                            "HTTP/1.1 200 OK",
+                            "Server: nginx/1.24.0 (Ubuntu)",
+                            "Content-Type: text/plain",
+                            "Content-Length: 18",
+                            "Data: SYSTEM ONLINE: OK"
+                        ]
+                    }
                 ],
                 hex: "0000  48 54 54 50 2f 31 2e 31 20 32 30 30 20 4f 4b 0d   HTTP/1.1 200 OK.\n0010  0a 53 65 72 76 65 72 3a 20 6e 67 69 6e 78 2f 31   .Server: nginx/1\n0020  2e 32 34 2e 30 0d 0a 43 6f 6e 74 65 6e 74 2d 54   .24.0..Content-T\n0030  79 70 65 3a 20 74 65 78 74 2f 70 6c 61 69 6e 0d   ype: text/plain."
             },
@@ -1121,20 +1154,24 @@
                     { title: "Frame 15: 432 bytes on wire", items: ["Protocols in frame: eth:ip:tcp:http:data-text-lines"] },
                     { title: "Internet Protocol Version 4", items: ["Src: 192.168.1.42", "Dst: 10.0.0.88"] },
                     { title: "Transmission Control Protocol", items: ["Src Port: 55432", "Dst Port: 8080", "Flags: PSH, ACK"] },
-                    { title: "Hypertext Transfer Protocol", items: [
-                        "POST /api/v2/telemetry/uplink HTTP/1.1",
-                        "Host: gateway.baysec.sfbu:8080",
-                        "User-Agent: BaySec-Telemetry-Uplink/2.4 (x86_64; Linux)",
-                        "Content-Type: application/x-www-form-urlencoded",
-                        "Authorization: Basic c2ZidV9hZG1pbjpoNGNrM3JfcDRzc3cwcmQ=",
-                        "Content-Length: 107"
-                    ]},
-                    { title: "HTML Form URL Encoded: application/x-www-form-urlencoded", items: [
-                        "station_id = SFBU-LAB-01",
-                        "operator_callsign = 0xGhost",
-                        "<span class='tree-highlight'>auth_token = sfbu{w1r3sh4rk_p4ck3t_sn1ff3r_2026}</span>",
-                        "status = beacon_active"
-                    ]}
+                    {
+                        title: "Hypertext Transfer Protocol", items: [
+                            "POST /api/v2/telemetry/uplink HTTP/1.1",
+                            "Host: gateway.baysec.sfbu:8080",
+                            "User-Agent: BaySec-Telemetry-Uplink/2.4 (x86_64; Linux)",
+                            "Content-Type: application/x-www-form-urlencoded",
+                            "Authorization: Basic c2ZidV9hZG1pbjpoNGNrM3JfcDRzc3cwcmQ=",
+                            "Content-Length: 107"
+                        ]
+                    },
+                    {
+                        title: "HTML Form URL Encoded: application/x-www-form-urlencoded", items: [
+                            "station_id = SFBU-LAB-01",
+                            "operator_callsign = 0xGhost",
+                            "<span class='tree-highlight'>auth_token = sfbu{w1r3sh4rk_p4ck3t_sn1ff3r_2026}</span>",
+                            "status = beacon_active"
+                        ]
+                    }
                 ],
                 hex: "0000  50 4f 53 54 20 2f 61 70 69 2f 76 32 2f 74 65 6c   POST /api/v2/tel\n0010  65 6d 65 74 72 79 2f 75 70 6c 69 6e 6b 20 48 54   emetry/uplink HT\n0020  54 50 2f 31 2e 31 0d 0a 48 6f 73 74 3a 20 67 61   TP/1.1..Host: ga\n0030  74 65 77 61 79 2e 62 61 79 73 65 63 2e 73 66 62   teway.baysec.sfb\n0040  75 3a 38 30 38 30 0d 0a 41 75 74 68 6f 72 69 7a   u:8080..Authoriz\n0050  61 74 69 6f 6e 3a 20 42 61 73 69 63 20 63 32 5a   ation: Basic c2Z\n0060  69 64 56 39 68 5a 47 31 70 62 6a 6f 6f 4e 47 4e   idV9hZG1pbjooNGN\n0070  72 4d 33 4a 66 63 44 52 7a 63 33 63 30 63 6d 51   rM3JfcDRzc3c0cmQ\n0080  3d 0d 0a 0d 0a 73 74 61 74 69 6f 6e 5f 69 64 3d   =....station_id=\n0090  53 46 42 55 2d 4c 41 42 2d 30 31 26 6f 70 65 72   SFBU-LAB-01&oper\n00a0  61 74 6f 72 5f 63 61 6c 6c 73 69 67 6e 3d 30 78   ator_callsign=0x\n00b0  47 68 6f 73 74 26 61 75 74 68 5f 74 6f 6b 65 6e   Ghost&auth_token\n00c0  3d 73 66 62 75 7b 77 31 72 33 73 68 34 72 6b 5f   =sfbu{w1r3sh4rk_\n00d0  70 34 63 6b 33 74 5f 73 6e 31 66 66 33 72 5f 32   p4ck3t_sn1ff3r_2\n00e0  30 32 36 7d 26 73 74 61 74 75 73 3d 61 63 74 69   026}&status=acti\n00f0  76 65                                             ve"
             },
@@ -1142,12 +1179,14 @@
                 no: 16, time: "1.350", src: "10.0.0.88", dst: "192.168.1.42", proto: "HTTP", len: 168,
                 info: "HTTP/1.1 200 OK (application/json)",
                 details: [
-                    { title: "Hypertext Transfer Protocol", items: [
-                        "HTTP/1.1 200 OK",
-                        "Server: BaySec-Gatekeeper/1.0",
-                        "Content-Type: application/json",
-                        "JSON: {\"status\":\"granted\",\"msg\":\"Operator beacon authenticated. Welcome.\"}"
-                    ]}
+                    {
+                        title: "Hypertext Transfer Protocol", items: [
+                            "HTTP/1.1 200 OK",
+                            "Server: BaySec-Gatekeeper/1.0",
+                            "Content-Type: application/json",
+                            "JSON: {\"status\":\"granted\",\"msg\":\"Operator beacon authenticated. Welcome.\"}"
+                        ]
+                    }
                 ],
                 hex: "0000  48 54 54 50 2f 31 2e 31 20 32 30 30 20 4f 4b 0d   HTTP/1.1 200 OK.\n0010  0a 53 65 72 76 65 72 3a 20 42 61 79 53 65 63 2d   .Server: BaySec-\n0020  47 61 74 65 6b 65 65 70 65 72 2f 31 2e 30 0d 0a   Gatekeeper/1.0..\n0030  7b 22 73 74 61 74 75 73 22 3a 22 67 72 61 6e 74   {\"status\":\"grant"
             },
@@ -1291,7 +1330,7 @@
                 const resp = await fetch(`${APPS_SCRIPT_URL}?action=get_active_session${simParam}${previewKey ? `&preview_key=${encodeURIComponent(previewKey)}` : ''}`);
                 if (resp.ok) {
                     const data = await resp.json();
-                    
+
                     // Sim Mode Banner strictly based on client SIM_MODE
                     if (simBanner) {
                         simBanner.style.display = SIM_MODE ? "flex" : "none";
